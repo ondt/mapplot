@@ -134,6 +134,7 @@ pub struct GoogleMap {
 	title: Option<String>,
 	markers: Vec<Marker>,
 	circles: Vec<Circle>,
+	rectangles: Vec<Rectangle>,
 }
 
 
@@ -148,6 +149,7 @@ impl GoogleMap {
 			title: None,
 			markers: Vec::default(),
 			circles: Vec::default(),
+			rectangles: Vec::default(),
 		}
 	}
 	
@@ -173,6 +175,16 @@ impl GoogleMap {
 	
 	pub fn circles(&mut self, circles: impl IntoIterator<Item=Circle>) -> &mut Self {
 		self.circles.extend(circles.into_iter());
+		self
+	}
+	
+	pub fn rectangle(&mut self, rectangle: Rectangle) -> &mut Self {
+		self.rectangles.push(rectangle);
+		self
+	}
+	
+	pub fn rectangles(&mut self, rectangles: impl IntoIterator<Item=Rectangle>) -> &mut Self {
+		self.rectangles.extend(rectangles.into_iter());
 		self
 	}
 }
@@ -338,6 +350,14 @@ pub struct LatLng {
 }
 
 
+impl LatLng {
+	#[must_use]
+	pub fn new(lat: f64, lon: f64) -> Self {
+		LatLng { lat, lon }
+	}
+}
+
+
 impl From<(f64, f64)> for LatLng {
 	fn from((lat, lon): (f64, f64)) -> Self {
 		LatLng { lat, lon }
@@ -348,6 +368,37 @@ impl From<(f64, f64)> for LatLng {
 impl JavaScript for LatLng {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		write!(f, "new google.maps.LatLng({}, {})", self.lat, self.lon)
+	}
+}
+
+
+#[derive(Debug, Copy, Clone)]
+pub struct LatLngBounds {
+	sw: LatLng,
+	ne: LatLng,
+}
+
+
+impl LatLngBounds {
+	#[must_use]
+	pub fn new(p1: LatLng, p2: LatLng) -> Self {
+		// TODO: correction
+		LatLngBounds {
+			sw: p1,
+			ne: p2,
+		}
+	}
+}
+
+
+impl JavaScript for LatLngBounds {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("new google.maps.LatLngBounds(")?;
+		self.sw.fmt_js(f)?;
+		f.write_str(", ")?;
+		self.ne.fmt_js(f)?;
+		f.write_str(")")?;
+		Ok(())
 	}
 }
 
@@ -405,8 +456,6 @@ impl JavaScript for Marker {
 pub struct Circle {
 	center: LatLng,
 	radius: f64,
-	
-	// TODO: this is the same for circke, rectangle, polygon
 	fill: FillOptions,
 	stroke: StrokeOptions,
 	common: CommonOptions,
@@ -518,6 +567,142 @@ impl JavaScript for Circle {
 			.entry("map", &MAP_IDENT)
 			.entry("center", &self.center)
 			.entry("radius", &self.radius)
+			.entry_maybe("fillColor", &self.fill.fill_color)
+			.entry_maybe("fillOpacity", &self.fill.fill_opacity)
+			.entry_maybe("strokePosition", &self.fill.stroke_position)
+			.entry_maybe("strokeColor", &self.stroke.stroke_color)
+			.entry_maybe("strokeOpacity", &self.stroke.stroke_opacity)
+			.entry_maybe("strokeWeight", &self.stroke.stroke_weight)
+			.entry_maybe("draggable", &self.common.draggable)
+			.entry_maybe("editable", &self.common.editable)
+			.entry_maybe("visible", &self.common.visible)
+			.entry_maybe("zIndex", &self.common.z_index)
+			.finish()?;
+		f.write_str(")")?;
+		Ok(())
+	}
+}
+
+
+/// A rectangle overlay.
+///
+/// # Examples
+/// ```
+/// use mapplot::google::{GoogleMap, MapType, Rectangle};
+///
+/// let html = GoogleMap::new((0.0, 0.0), 1, MapType::Roadmap, "<your-apikey-here>")
+///     .rectangle(Rectangle::new((11.1, 22.2), (33.3, 44.4)))
+///     .to_string();
+///
+/// std::fs::write("map.html", html).unwrap();
+/// ```
+#[derive(Debug, Copy, Clone)]
+pub struct Rectangle {
+	bounds: LatLngBounds,
+	fill: FillOptions,
+	stroke: StrokeOptions,
+	common: CommonOptions,
+}
+
+
+impl Rectangle {
+	/// Create a new Rectangle by specifying its south-west and north-east corners.
+	#[must_use]
+	pub fn new(sw: impl Into<LatLng>, ne: impl Into<LatLng>) -> Self {
+		Rectangle {
+			bounds: LatLngBounds::new(sw.into(), ne.into()),
+			fill: FillOptions::default(),
+			stroke: StrokeOptions::default(),
+			common: CommonOptions::default(),
+		}
+	}
+	
+	/// Set both `fill_color` and `stroke_color`.
+	#[must_use]
+	pub fn color(mut self, value: Color) -> Self {
+		self.fill.fill_color = Some(value);
+		self.stroke.stroke_color = Some(value);
+		self
+	}
+	
+	/// The fill color.
+	#[must_use]
+	pub fn fill_color(mut self, value: Color) -> Self {
+		self.fill.fill_color = Some(value);
+		self
+	}
+	
+	/// The fill opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn fill_opacity(mut self, value: f32) -> Self {
+		self.fill.fill_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke position. Defaults to [`StrokePosition::Center`]. This property is not supported on Internet Explorer 8 and earlier.
+	#[must_use]
+	pub fn stroke_position(mut self, value: StrokePosition) -> Self {
+		self.fill.stroke_position = Some(value);
+		self
+	}
+	
+	/// The stroke color.
+	#[must_use]
+	pub fn stroke_color(mut self, value: Color) -> Self {
+		self.stroke.stroke_color = Some(value);
+		self
+	}
+	
+	/// The stroke opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn stroke_opacity(mut self, value: f32) -> Self {
+		self.stroke.stroke_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke width in pixels.
+	#[must_use]
+	pub fn stroke_weight(mut self, value: usize) -> Self {
+		self.stroke.stroke_weight = Some(value);
+		self
+	}
+	
+	/// If set to `true`, the user can drag this rectangle over the map. Defaults to `false`.
+	#[must_use]
+	pub fn draggable(mut self, value: bool) -> Self {
+		self.common.draggable = Some(value);
+		self
+	}
+	
+	/// If set to `true`, the user can edit this rectangle by dragging the control points shown at the corners and on each edge. Defaults to `false`.
+	#[must_use]
+	pub fn editable(mut self, value: bool) -> Self {
+		self.common.editable = Some(value);
+		self
+	}
+	
+	/// Whether this rectangle is visible on the map. Defaults to `true`.
+	#[must_use]
+	pub fn visible(mut self, value: bool) -> Self {
+		self.common.visible = Some(value);
+		self
+	}
+	
+	/// The z-index compared to other polygons.
+	#[must_use]
+	pub fn z_index(mut self, value: isize) -> Self {
+		self.common.z_index = Some(value);
+		self
+	}
+}
+
+
+impl JavaScript for Rectangle {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("new google.maps.Rectangle(")?;
+		f.write_object()
+			.entry("map", &MAP_IDENT)
+			.entry("bounds", &self.bounds)
 			.entry_maybe("fillColor", &self.fill.fill_color)
 			.entry_maybe("fillOpacity", &self.fill.fill_opacity)
 			.entry_maybe("strokePosition", &self.fill.stroke_position)
