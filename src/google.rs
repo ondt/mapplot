@@ -314,16 +314,33 @@ pub enum Color {
 	RGBA(u8, u8, u8, u8),
 	HSL(u16, u8, u8),
 	HSLA(u16, u8, u8, u8),
+	Black,
+	Silver,
+	Gray,
+	White,
+	Maroon,
+	Red,
+	Purple,
+	Fuchsia,
+	Green,
+	Lime,
+	Olive,
+	Yellow,
+	Navy,
+	Blue,
+	Teal,
+	Aqua,
 }
 
 
 impl JavaScript for Color {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		match self {
+		match *self {
 			Color::RGB(r, g, b) => write!(f, "\"#{:02x}{:02x}{:02x}\"", r, g, b),
 			Color::RGBA(r, g, b, a) => write!(f, "\"#{:02x}{:02x}{:02x}{:02x}\"", r, g, b, a),
-			Color::HSL(h, s, l) => write!(f, "\"hsl({h}, {s}%, {l}%)\"", h = h, s = 100.0 * f64::from(*s) / 255.0, l = 100.0 * f64::from(*l) / 255.0),
-			Color::HSLA(h, s, l, a) => write!(f, "\"hsla({}, {}%, {}%, {}%)\"", h = h, s = 100.0 * f64::from(*s) / 255.0, l = 100.0 * f64::from(*l) / 255.0, a = 100.0 * f64::from(*a) / 255.0),
+			Color::HSL(h, s, l) => write!(f, "\"hsl({h}, {s}%, {l}%)\"", h = h, s = 100.0 * f64::from(s) / 255.0, l = 100.0 * f64::from(l) / 255.0),
+			Color::HSLA(h, s, l, a) => write!(f, "\"hsla({}, {}%, {}%, {}%)\"", h = h, s = 100.0 * f64::from(s) / 255.0, l = 100.0 * f64::from(l) / 255.0, a = 100.0 * f64::from(a) / 255.0),
+			named => format!("{:?}", named).to_lowercase().fmt_js(f),
 		}
 	}
 }
