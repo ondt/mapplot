@@ -138,6 +138,18 @@ pub enum MapType {
 }
 
 
+impl JavaScript for MapType {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		match self {
+			MapType::Roadmap => f.write_str("google.maps.MapTypeId.ROADMAP"),
+			MapType::Satellite => f.write_str("google.maps.MapTypeId.SATELLITE"),
+			MapType::Hybrid => f.write_str("google.maps.MapTypeId.HYBRID"),
+			MapType::Terrain => f.write_str("google.maps.MapTypeId.TERRAIN"),
+		}
+	}
+}
+
+
 #[derive(Debug)]
 pub struct GoogleMap {
 	apikey: String,
@@ -180,7 +192,7 @@ impl JavaScript for GoogleMap {
 		f.write_object()
 			.entry("center", &self.center)
 			.entry("zoom", &self.zoom)
-			// .entry("mapTypeId", &self.map_type)
+			.entry("mapTypeId", &self.map_type)
 			.finish()?;
 		f.write_str(");\n\n")?;
 		
