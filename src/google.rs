@@ -214,6 +214,14 @@ impl JavaScript for GoogleMap {
 			f.write_str(";\n")?;
 		}
 		
+		f.write_str("\n")?;
+		
+		for rectangle in &self.rectangles {
+			f.write_str("\t\t")?;
+			rectangle.fmt_js(f)?;
+			f.write_str(";\n")?;
+		}
+		
 		Ok(())
 	}
 }
@@ -374,19 +382,15 @@ impl JavaScript for LatLng {
 
 #[derive(Debug, Copy, Clone)]
 pub struct LatLngBounds {
-	sw: LatLng,
-	ne: LatLng,
+	p1: LatLng,
+	p2: LatLng,
 }
 
 
 impl LatLngBounds {
 	#[must_use]
 	pub fn new(p1: LatLng, p2: LatLng) -> Self {
-		// TODO: correction
-		LatLngBounds {
-			sw: p1,
-			ne: p2,
-		}
+		LatLngBounds { p1, p2 }
 	}
 }
 
@@ -394,9 +398,9 @@ impl LatLngBounds {
 impl JavaScript for LatLngBounds {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.write_str("new google.maps.LatLngBounds(")?;
-		self.sw.fmt_js(f)?;
+		self.p1.fmt_js(f)?;
 		f.write_str(", ")?;
-		self.ne.fmt_js(f)?;
+		self.p2.fmt_js(f)?;
 		f.write_str(")")?;
 		Ok(())
 	}
@@ -415,9 +419,9 @@ pub struct Marker {
 
 impl Marker {
 	#[must_use]
-	pub fn new(lat: f64, lng: f64) -> Self {
+	pub fn new(pos: impl Into<LatLng>) -> Self {
 		Marker {
-			position: LatLng { lat, lon: lng },
+			position: pos.into(),
 			label: None,
 			title: None,
 			opacity: None,
@@ -608,9 +612,9 @@ pub struct Rectangle {
 impl Rectangle {
 	/// Create a new Rectangle by specifying its south-west and north-east corners.
 	#[must_use]
-	pub fn new(sw: impl Into<LatLng>, ne: impl Into<LatLng>) -> Self {
+	pub fn new(p1: impl Into<LatLng>, p2: impl Into<LatLng>) -> Self {
 		Rectangle {
-			bounds: LatLngBounds::new(sw.into(), ne.into()),
+			bounds: LatLngBounds::new(p1.into(), p2.into()),
 			fill: FillOptions::default(),
 			stroke: StrokeOptions::default(),
 			common: CommonOptions::default(),
