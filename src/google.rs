@@ -29,17 +29,21 @@ impl<'a, 'f> JavaScriptObject<'a, 'f> {
 		JavaScriptObject { fmt, result, pending_comma: false }
 	}
 	
-	fn entry(&mut self, key: &str, value: &impl Display) -> &mut Self {
+	fn entry(&mut self, key: &str, value: &impl Render) -> &mut Self {
 		self.entry_maybe(key, &Some(value))
 	}
 	
-	fn entry_maybe(&mut self, key: &str, value: &Option<impl Display>) -> &mut Self {
+	fn entry_maybe(&mut self, key: &str, value: &Option<impl Render>) -> &mut Self {
 		self.result = self.result.and_then(|_| {
 			if let Some(value) = value {
 				if self.pending_comma {
 					self.fmt.write_str(", ")?;
 				}
-				self.fmt.write_fmt(format_args!("{}: {}", key, value))?;
+				
+				self.fmt.write_str(key)?;
+				self.fmt.write_str(": ")?;
+				value.render(self.fmt)?;
+				
 				self.pending_comma = true;
 			}
 			Ok(())
@@ -79,6 +83,23 @@ macro_rules! render {
 render! { f64 isize }
 
 
+impl<R: Render> Render for &R {
+	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		(*self).render(f)
+	}
+}
+
+
+// string literal
+impl Render for &str {
+	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		// TODO: replace '\n' and stuff
+		write!(f, "\"{}\"", self)
+	}
+}
+
+
+// string literal
 impl Render for String {
 	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		// TODO: replace '\n' and stuff
@@ -207,8 +228,7 @@ impl Marker {
 	}
 	
 	pub fn label(mut self, value: impl AsRef<str>) -> Self {
-		// TODO: remove this hack
-		self.label = Some(format!("\"{}\"", value.as_ref()));
+		self.label = Some(value.as_ref().to_string());
 		self
 	}
 }
@@ -238,13 +258,6 @@ pub struct LatLng {
 impl From<(f64, f64)> for LatLng {
 	fn from((lat, lon): (f64, f64)) -> Self {
 		LatLng { lat, lon }
-	}
-}
-
-
-impl Display for LatLng {
-	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		write!(f, "new google.maps.LatLng({}, {})", self.lat, self.lon)
 	}
 }
 
