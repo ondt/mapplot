@@ -174,20 +174,8 @@ impl GoogleMap {
 }
 
 
-// TODO: Display instead of Render?
 impl Render for GoogleMap {
 	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		write!(f, r#"
-<html>
-<head>
-<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
-<title>{title}</title>
-<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=visualization&sensor=true_or_false&key={apikey}"></script>
-<script type="text/javascript">
-	function initialize() {{
-"#, title = if let Some(t) = &self.title { t.as_str() } else { "Default Title" }, apikey = self.apikey)?;
-		
 		write!(f, r#"		var {} = new google.maps.Map(document.getElementById("map_canvas"), "#, MAP_IDENT)?;
 		f.write_object()
 			.entry("center", &self.center)
@@ -202,6 +190,26 @@ impl Render for GoogleMap {
 			f.write_str(";\n")?;
 		}
 		
+		Ok(())
+	}
+}
+
+
+impl Display for GoogleMap {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		write!(f, r#"
+<html>
+<head>
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+<title>{title}</title>
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=visualization&sensor=true_or_false&key={apikey}"></script>
+<script type="text/javascript">
+	function initialize() {{
+"#, title = if let Some(t) = &self.title { t.as_str() } else { "Default Title" }, apikey = self.apikey)?;
+		
+		self.render(f)?;
+		
 		write!(f, r#"
 	}}
 </script>
@@ -211,13 +219,6 @@ impl Render for GoogleMap {
 </body>
 </html>
 "#)
-	}
-}
-
-
-impl Display for GoogleMap {
-	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		self.render(f)
 	}
 }
 
