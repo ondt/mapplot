@@ -80,7 +80,7 @@ macro_rules! render {
     )*)
 }
 
-render! { f64 isize }
+render! { u8 f64 isize }
 
 
 impl<R: Render> Render for &R {
