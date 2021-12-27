@@ -1,8 +1,15 @@
 [package]
 name = "mapplot"
 version = "0.1.0"
+authors = ["Ondrej Telka <me@ondt.dev>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
+description = "A library that plots all kinds of data on all kinds of maps."
+repository = "https://github.com/ondt/mapplot"
+documentation = "https://docs.rs/mapplot"
+readme = "README.md"
+categories = ["visualization"]
+keywords = ["plotting", "maps", "geo", "google", "mapbox", "svg"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
