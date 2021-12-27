@@ -29,11 +29,11 @@ impl<'a, 'f> JavaScriptObject<'a, 'f> {
 		JavaScriptObject { fmt, result, pending_comma: false }
 	}
 	
-	fn entry(&mut self, key: &str, value: &impl Render) -> &mut Self {
+	fn entry(&mut self, key: &str, value: &impl JavaScript) -> &mut Self {
 		self.entry_maybe(key, &Some(value))
 	}
 	
-	fn entry_maybe(&mut self, key: &str, value: &Option<impl Render>) -> &mut Self {
+	fn entry_maybe(&mut self, key: &str, value: &Option<impl JavaScript>) -> &mut Self {
 		self.result = self.result.and_then(|_| {
 			if let Some(value) = value {
 				if self.pending_comma {
@@ -42,7 +42,7 @@ impl<'a, 'f> JavaScriptObject<'a, 'f> {
 				
 				self.fmt.write_str(key)?;
 				self.fmt.write_str(": ")?;
-				value.render(self.fmt)?;
+				value.fmt_js(self.fmt)?;
 				
 				self.pending_comma = true;
 			}
@@ -58,19 +58,19 @@ impl<'a, 'f> JavaScriptObject<'a, 'f> {
 }
 
 
-trait Render: Sized {
-	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result;
+trait JavaScript: Sized {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result;
 	
 	fn to_stringg(&self) -> String {
-		hijack_formatter(|f| self.render(f))
+		hijack_formatter(|f| self.fmt_js(f))
 	}
 }
 
 
 macro_rules! render {
     ($($t:ty)*) => ($(
-        impl Render for $t {
-            fn render(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        impl JavaScript for $t {
+            fn fmt_js(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 Display::fmt(self, fmt)
             }
         }
@@ -80,16 +80,16 @@ macro_rules! render {
 render! { u8 f64 isize }
 
 
-impl<R: Render> Render for &R {
-	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		(*self).render(f)
+impl<R: JavaScript> JavaScript for &R {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		(*self).fmt_js(f)
 	}
 }
 
 
 // string literal
-impl Render for &str {
-	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl JavaScript for &str {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		// TODO: replace '\n' and stuff
 		write!(f, "\"{}\"", self)
 	}
@@ -97,8 +97,8 @@ impl Render for &str {
 
 
 // string literal
-impl Render for String {
-	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl JavaScript for String {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		// TODO: replace '\n' and stuff
 		write!(f, "\"{}\"", self)
 	}
@@ -111,8 +111,8 @@ const MAP_IDENT: RawIdent<'static> = RawIdent("__map");
 struct RawIdent<'a>(&'a str);
 
 
-impl<'a> Render for RawIdent<'a> {
-	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl<'a> JavaScript for RawIdent<'a> {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		Display::fmt(self.0, f)
 	}
 }
@@ -174,8 +174,8 @@ impl GoogleMap {
 }
 
 
-impl Render for GoogleMap {
-	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl JavaScript for GoogleMap {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		write!(f, r#"		var {} = new google.maps.Map(document.getElementById("map_canvas"), "#, MAP_IDENT)?;
 		f.write_object()
 			.entry("center", &self.center)
@@ -186,7 +186,7 @@ impl Render for GoogleMap {
 		
 		for marker in &self.markers {
 			f.write_str("\t\t")?;
-			marker.render(f)?;
+			marker.fmt_js(f)?;
 			f.write_str(";\n")?;
 		}
 		
@@ -208,7 +208,7 @@ impl Display for GoogleMap {
 	function initialize() {{
 "#, title = if let Some(t) = &self.title { t.as_str() } else { "Default Title" }, apikey = self.apikey)?;
 		
-		self.render(f)?;
+		self.fmt_js(f)?;
 		
 		write!(f, r#"
 	}}
@@ -252,8 +252,8 @@ impl Marker {
 }
 
 
-impl Render for Marker {
-	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl JavaScript for Marker {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.write_str("new google.maps.Marker(")?;
 		f.write_object()
 			.entry("map", &MAP_IDENT)
@@ -280,9 +280,8 @@ impl From<(f64, f64)> for LatLng {
 }
 
 
-impl Render for LatLng {
-	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		// TODO: error: lat lon out of bounds (here?)
+impl JavaScript for LatLng {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		write!(f, "new google.maps.LatLng({}, {})", self.lat, self.lon)
 	}
 }
