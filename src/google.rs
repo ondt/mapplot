@@ -77,7 +77,7 @@ macro_rules! literal_default {
     )*)
 }
 
-literal_default! { u8 f64 isize }
+literal_default! { bool u8 f32 f64 usize isize }
 
 
 impl<R: JavaScript> JavaScript for &R {
@@ -260,6 +260,77 @@ impl JavaScript for MapType {
 }
 
 
+#[derive(Default, Debug, Copy, Clone)]
+struct CommonOptions {
+	// // TODO: this would have no effect
+	// clickable: Option<bool>,
+	draggable: Option<bool>,
+	// TODO: Marker has everything but this
+	editable: Option<bool>,
+	visible: Option<bool>,
+	z_index: Option<isize>,
+}
+
+
+#[derive(Default, Debug, Copy, Clone)]
+struct StrokeOptions {
+	stroke_color: Option<Color>,
+	stroke_opacity: Option<f32>,
+	stroke_weight: Option<usize>,
+}
+
+
+#[derive(Default, Debug, Copy, Clone)]
+struct FillOptions {
+	fill_color: Option<Color>,
+	fill_opacity: Option<f32>,
+	stroke_position: Option<StrokePosition>,
+}
+
+
+#[derive(Debug, Copy, Clone)]
+pub enum Color {
+	RGB(u8, u8, u8),
+	RGBA(u8, u8, u8, u8),
+	HSL(u16, u8, u8),
+	HSLA(u16, u8, u8, u8),
+}
+
+
+impl JavaScript for Color {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		match self {
+			Color::RGB(r, g, b) => write!(f, "\"#{:02x}{:02x}{:02x}\"", r, g, b),
+			Color::RGBA(r, g, b, a) => write!(f, "\"#{:02x}{:02x}{:02x}{:02x}\"", r, g, b, a),
+			Color::HSL(h, s, l) => write!(f, "\"hsl({h}, {s}%, {l}%)\"", h = h, s = 100.0 * f64::from(*s) / 255.0, l = 100.0 * f64::from(*l) / 255.0),
+			Color::HSLA(h, s, l, a) => write!(f, "\"hsla({}, {}%, {}%, {}%)\"", h = h, s = 100.0 * f64::from(*s) / 255.0, l = 100.0 * f64::from(*l) / 255.0, a = 100.0 * f64::from(*a) / 255.0),
+		}
+	}
+}
+
+
+#[derive(Debug, Copy, Clone)]
+pub enum StrokePosition {
+	/// The stroke is centered on the polygon's path, with half the stroke inside the polygon and half the stroke outside the polygon.
+	Center,
+	/// The stroke lies inside the polygon.
+	Inside,
+	/// The stroke lies outside the polygon.
+	Outside,
+}
+
+
+impl JavaScript for StrokePosition {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		match self {
+			StrokePosition::Center => f.write_str("google.maps.StrokePosition.CENTER"),
+			StrokePosition::Inside => f.write_str("google.maps.StrokePosition.INSIDE"),
+			StrokePosition::Outside => f.write_str("google.maps.StrokePosition.OUTSIDE"),
+		}
+	}
+}
+
+
 #[derive(Debug, Copy, Clone)]
 pub struct LatLng {
 	lat: f64,
@@ -324,24 +395,118 @@ impl JavaScript for Marker {
 }
 
 
-#[derive(Debug)]
+/// A circle on the Earth's surface; also known as a "spherical cap".
+///
+/// # Examples
+/// ```
+/// todo!()
+/// ```
+#[derive(Debug, Copy, Clone)]
 pub struct Circle {
 	center: LatLng,
 	radius: f64,
-	opacity: Option<f64>,
-	z_index: Option<isize>,
+	
+	// TODO: this is the same for circke, rectangle, polygon
+	fill: FillOptions,
+	stroke: StrokeOptions,
+	common: CommonOptions,
 }
 
 
 impl Circle {
+	/// Create a new circle.
+	///
+	/// # Arguments
+	/// * `lat`: Latitude in degrees.
+	/// * `lon`: Longitude in degrees.
+	/// * `radius`: The radius in meters on the Earth's surface.
 	#[must_use]
 	pub fn new(lat: f64, lon: f64, radius: f64) -> Self {
 		Circle {
 			center: LatLng { lat, lon },
 			radius,
-			opacity: None,
-			z_index: None,
+			fill: FillOptions::default(),
+			stroke: StrokeOptions::default(),
+			common: CommonOptions::default(),
 		}
+	}
+	
+	/// Set both `fill_color` and `stroke_color`.
+	#[must_use]
+	pub fn color(mut self, value: Color) -> Self {
+		self.fill.fill_color = Some(value);
+		self.stroke.stroke_color = Some(value);
+		self
+	}
+	
+	/// The fill color.
+	#[must_use]
+	pub fn fill_color(mut self, value: Color) -> Self {
+		self.fill.fill_color = Some(value);
+		self
+	}
+	
+	/// The fill opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn fill_opacity(mut self, value: f32) -> Self {
+		self.fill.fill_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke position. Defaults to [`StrokePosition::Center`]. This property is not supported on Internet Explorer 8 and earlier.
+	#[must_use]
+	pub fn stroke_position(mut self, value: StrokePosition) -> Self {
+		self.fill.stroke_position = Some(value);
+		self
+	}
+	
+	/// The stroke color.
+	#[must_use]
+	pub fn stroke_color(mut self, value: Color) -> Self {
+		self.stroke.stroke_color = Some(value);
+		self
+	}
+	
+	/// The stroke opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn stroke_opacity(mut self, value: f32) -> Self {
+		self.stroke.stroke_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke width in pixels.
+	#[must_use]
+	pub fn stroke_weight(mut self, value: usize) -> Self {
+		self.stroke.stroke_weight = Some(value);
+		self
+	}
+	
+	/// If set to `true`, the user can drag this circle over the map. Defaults to `false`.
+	#[must_use]
+	pub fn draggable(mut self, value: bool) -> Self {
+		self.common.draggable = Some(value);
+		self
+	}
+	
+	/// If set to `true`, the user can edit this circle by dragging the control points shown at the center and around the circumference of the circle. Defaults to `false`.
+	#[must_use]
+	pub fn editable(mut self, value: bool) -> Self {
+		self.common.editable = Some(value);
+		self
+	}
+	
+	/// Whether this circle is visible on the map. Defaults to `true`.
+	#[must_use]
+	pub fn visible(mut self, value: bool) -> Self {
+		self.common.visible = Some(value);
+		self
+	}
+	
+	/// The z-index compared to other polygons.
+	#[must_use]
+	pub fn z_index(mut self, value: isize) -> Self {
+		self.common.z_index = Some(value);
+		self
 	}
 }
 
@@ -353,6 +518,16 @@ impl JavaScript for Circle {
 			.entry("map", &MAP_IDENT)
 			.entry("center", &self.center)
 			.entry("radius", &self.radius)
+			.entry_maybe("fillColor", &self.fill.fill_color)
+			.entry_maybe("fillOpacity", &self.fill.fill_opacity)
+			.entry_maybe("strokePosition", &self.fill.stroke_position)
+			.entry_maybe("strokeColor", &self.stroke.stroke_color)
+			.entry_maybe("strokeOpacity", &self.stroke.stroke_opacity)
+			.entry_maybe("strokeWeight", &self.stroke.stroke_weight)
+			.entry_maybe("draggable", &self.common.draggable)
+			.entry_maybe("editable", &self.common.editable)
+			.entry_maybe("visible", &self.common.visible)
+			.entry_maybe("zIndex", &self.common.z_index)
 			.finish()?;
 		f.write_str(")")?;
 		Ok(())

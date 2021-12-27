@@ -1,6 +1,6 @@
 use std::fs;
 
-use mapplot::google::{Circle, GoogleMap, MapType, Marker};
+use mapplot::google::{Circle, Color, GoogleMap, MapType, Marker};
 
 
 fn main() {
@@ -14,8 +14,9 @@ fn main() {
 		.marker(Marker::new(50.0, 15.0).label("B"))
 		.marker(Marker::new(50.0, 16.0).label("C"))
 		.markers(points)
-		.circle(Circle::new(50.3, 14.4, 30000.0))
+		.circle(Circle::new(50.0, 17.0, 30_000.0).color(Color::HSL(200, 128, 100)))
 		.to_string();
+	
 	println!("{}", html);
 	fs::write("map.html", html).unwrap();
 }
