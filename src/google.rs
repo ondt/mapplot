@@ -67,7 +67,7 @@ trait JavaScript: Sized {
 }
 
 
-macro_rules! render {
+macro_rules! literal_default {
     ($($t:ty)*) => ($(
         impl JavaScript for $t {
             fn fmt_js(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -77,7 +77,7 @@ macro_rules! render {
     )*)
 }
 
-render! { u8 f64 isize }
+literal_default! { u8 f64 isize }
 
 
 impl<R: JavaScript> JavaScript for &R {
