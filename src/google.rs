@@ -1,7 +1,4 @@
-use std::fmt;
-use std::fmt::{Debug, Display, Formatter};
-
-use crate::hijack_formatter;
+use std::fmt::{self, Debug, Display, Formatter};
 
 
 trait FormatterExt<'f> {
@@ -58,12 +55,8 @@ impl<'a, 'f> JavaScriptObject<'a, 'f> {
 }
 
 
-trait JavaScript: Sized {
+trait JavaScript {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result;
-	
-	fn to_stringg(&self) -> String {
-		hijack_formatter(|f| self.fmt_js(f))
-	}
 }
 
 
