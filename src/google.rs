@@ -58,9 +58,6 @@ impl<'a, 'f> JavaScriptObject<'a, 'f> {
 }
 
 
-const MAP_SYMBOL: &str = "__map";
-
-
 trait Render: Sized {
 	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result;
 	
@@ -104,6 +101,26 @@ impl Render for String {
 	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		// TODO: replace '\n' and stuff
 		write!(f, "\"{}\"", self)
+	}
+}
+
+
+const MAP_IDENT: RawIdent<'static> = RawIdent("__map");
+
+
+struct RawIdent<'a>(&'a str);
+
+
+impl<'a> Render for RawIdent<'a> {
+	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		Display::fmt(self.0, f)
+	}
+}
+
+
+impl<'a> Display for RawIdent<'a> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		Display::fmt(self.0, f)
 	}
 }
 
@@ -171,7 +188,7 @@ impl Render for GoogleMap {
 	function initialize() {{
 "#, title = if let Some(t) = &self.title { t.as_str() } else { "Default Title" }, apikey = self.apikey)?;
 		
-		write!(f, r#"		var {} = new google.maps.Map(document.getElementById("map_canvas"), "#, MAP_SYMBOL)?;
+		write!(f, r#"		var {} = new google.maps.Map(document.getElementById("map_canvas"), "#, MAP_IDENT)?;
 		f.write_object()
 			.entry("center", &self.center)
 			.entry("zoom", &self.zoom)
@@ -238,7 +255,7 @@ impl Render for Marker {
 	fn render(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.write_str("new google.maps.Marker(")?;
 		f.write_object()
-			.entry("map", &MAP_SYMBOL)
+			.entry("map", &MAP_IDENT)
 			.entry("position", &self.position)
 			.entry_maybe("label", &self.label)
 			.finish()?;
