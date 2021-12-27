@@ -192,7 +192,7 @@ impl GoogleMap {
 
 impl JavaScript for GoogleMap {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		write!(f, r#"		var {} = new google.maps.Map(document.getElementById("map_canvas"), "#, MAP_IDENT)?;
+		write!(f, r#"		const {} = new google.maps.Map(document.getElementById("map_canvas"), "#, MAP_IDENT)?;
 		f.write_object()
 			.entry("center", &self.center)
 			.entry("zoom", &self.zoom)
