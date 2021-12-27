@@ -183,6 +183,11 @@ impl GoogleMap {
 		self.markers.push(marker);
 		self
 	}
+	
+	pub fn markers(&mut self, markers: impl IntoIterator<Item=Marker>) -> &mut Self {
+		self.markers.extend(markers.into_iter());
+		self
+	}
 }
 
 
