@@ -125,31 +125,6 @@ impl<'a> Display for RawIdent<'a> {
 }
 
 
-#[derive(Debug, Copy, Clone)]
-pub enum MapType {
-	/// A normal street map.
-	Roadmap,
-	/// Satellite images.
-	Satellite,
-	/// A transparent layer of major streets on satellite images.
-	Hybrid,
-	/// Maps with physical features such as terrain and vegetation.
-	Terrain,
-}
-
-
-impl JavaScript for MapType {
-	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		match self {
-			MapType::Roadmap => f.write_str("google.maps.MapTypeId.ROADMAP"),
-			MapType::Satellite => f.write_str("google.maps.MapTypeId.SATELLITE"),
-			MapType::Hybrid => f.write_str("google.maps.MapTypeId.HYBRID"),
-			MapType::Terrain => f.write_str("google.maps.MapTypeId.TERRAIN"),
-		}
-	}
-}
-
-
 #[derive(Debug)]
 pub struct GoogleMap {
 	apikey: String,
@@ -240,6 +215,52 @@ impl Display for GoogleMap {
 }
 
 
+#[derive(Debug, Copy, Clone)]
+pub enum MapType {
+	/// A normal street map.
+	Roadmap,
+	/// Satellite images.
+	Satellite,
+	/// A transparent layer of major streets on satellite images.
+	Hybrid,
+	/// Maps with physical features such as terrain and vegetation.
+	Terrain,
+}
+
+
+impl JavaScript for MapType {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		match self {
+			MapType::Roadmap => f.write_str("google.maps.MapTypeId.ROADMAP"),
+			MapType::Satellite => f.write_str("google.maps.MapTypeId.SATELLITE"),
+			MapType::Hybrid => f.write_str("google.maps.MapTypeId.HYBRID"),
+			MapType::Terrain => f.write_str("google.maps.MapTypeId.TERRAIN"),
+		}
+	}
+}
+
+
+#[derive(Debug, Copy, Clone)]
+pub struct LatLng {
+	lat: f64,
+	lon: f64,
+}
+
+
+impl From<(f64, f64)> for LatLng {
+	fn from((lat, lon): (f64, f64)) -> Self {
+		LatLng { lat, lon }
+	}
+}
+
+
+impl JavaScript for LatLng {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		write!(f, "new google.maps.LatLng({}, {})", self.lat, self.lon)
+	}
+}
+
+
 #[derive(Debug)]
 pub struct Marker {
 	position: LatLng,
@@ -279,26 +300,5 @@ impl JavaScript for Marker {
 			.finish()?;
 		f.write_str(")")?;
 		Ok(())
-	}
-}
-
-
-#[derive(Debug, Copy, Clone)]
-pub struct LatLng {
-	lat: f64,
-	lon: f64,
-}
-
-
-impl From<(f64, f64)> for LatLng {
-	fn from((lat, lon): (f64, f64)) -> Self {
-		LatLng { lat, lon }
-	}
-}
-
-
-impl JavaScript for LatLng {
-	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		write!(f, "new google.maps.LatLng({}, {})", self.lat, self.lon)
 	}
 }
