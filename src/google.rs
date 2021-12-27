@@ -133,6 +133,7 @@ pub struct GoogleMap {
 	map_type: MapType,
 	title: Option<String>,
 	markers: Vec<Marker>,
+	circles: Vec<Circle>,
 }
 
 
@@ -146,6 +147,7 @@ impl GoogleMap {
 			map_type,
 			title: None,
 			markers: Vec::default(),
+			circles: Vec::default(),
 		}
 	}
 	
@@ -161,6 +163,16 @@ impl GoogleMap {
 	
 	pub fn markers(&mut self, markers: impl IntoIterator<Item=Marker>) -> &mut Self {
 		self.markers.extend(markers.into_iter());
+		self
+	}
+	
+	pub fn circle(&mut self, circle: Circle) -> &mut Self {
+		self.circles.push(circle);
+		self
+	}
+	
+	pub fn circles(&mut self, circles: impl IntoIterator<Item=Circle>) -> &mut Self {
+		self.circles.extend(circles.into_iter());
 		self
 	}
 }
@@ -179,6 +191,14 @@ impl JavaScript for GoogleMap {
 		for marker in &self.markers {
 			f.write_str("\t\t")?;
 			marker.fmt_js(f)?;
+			f.write_str(";\n")?;
+		}
+		
+		f.write_str("\n")?;
+		
+		for circle in &self.circles {
+			f.write_str("\t\t")?;
+			circle.fmt_js(f)?;
 			f.write_str(";\n")?;
 		}
 		
@@ -297,6 +317,42 @@ impl JavaScript for Marker {
 			.entry("map", &MAP_IDENT)
 			.entry("position", &self.position)
 			.entry_maybe("label", &self.label)
+			.finish()?;
+		f.write_str(")")?;
+		Ok(())
+	}
+}
+
+
+#[derive(Debug)]
+pub struct Circle {
+	center: LatLng,
+	radius: f64,
+	opacity: Option<f64>,
+	z_index: Option<isize>,
+}
+
+
+impl Circle {
+	#[must_use]
+	pub fn new(lat: f64, lon: f64, radius: f64) -> Self {
+		Circle {
+			center: LatLng { lat, lon },
+			radius,
+			opacity: None,
+			z_index: None,
+		}
+	}
+}
+
+
+impl JavaScript for Circle {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("new google.maps.Circle(")?;
+		f.write_object()
+			.entry("map", &MAP_IDENT)
+			.entry("center", &self.center)
+			.entry("radius", &self.radius)
 			.finish()?;
 		f.write_str(")")?;
 		Ok(())
