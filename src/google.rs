@@ -27,10 +27,10 @@ impl<'a, 'f> JavaScriptObject<'a, 'f> {
 	}
 	
 	fn entry(&mut self, key: &str, value: &impl JavaScript) -> &mut Self {
-		self.entry_maybe(key, &Some(value))
+		self.entry_opt(key, &Some(value))
 	}
 	
-	fn entry_maybe(&mut self, key: &str, value: &Option<impl JavaScript>) -> &mut Self {
+	fn entry_opt(&mut self, key: &str, value: &Option<impl JavaScript>) -> &mut Self {
 		self.result = self.result.and_then(|_| {
 			if let Some(value) = value {
 				if self.pending_comma {
@@ -497,7 +497,7 @@ impl JavaScript for Marker {
 		f.write_object()
 			.entry("map", &MAP_IDENT)
 			.entry("position", &self.position)
-			.entry_maybe("label", &self.label)
+			.entry_opt("label", &self.label)
 			.finish()?;
 		f.write_str(")")?;
 		Ok(())
@@ -643,17 +643,17 @@ impl JavaScript for Polygon {
 		f.write_object()
 			.entry("map", &MAP_IDENT)
 			.entry("paths", &self.paths)
-			.entry_maybe("geodesic", &self.geodesic)
-			.entry_maybe("fillColor", &self.fill.fill_color)
-			.entry_maybe("fillOpacity", &self.fill.fill_opacity)
-			.entry_maybe("strokePosition", &self.fill.stroke_position)
-			.entry_maybe("strokeColor", &self.stroke.stroke_color)
-			.entry_maybe("strokeOpacity", &self.stroke.stroke_opacity)
-			.entry_maybe("strokeWeight", &self.stroke.stroke_weight)
-			.entry_maybe("draggable", &self.common.draggable)
-			.entry_maybe("editable", &self.common.editable)
-			.entry_maybe("visible", &self.common.visible)
-			.entry_maybe("zIndex", &self.common.z_index)
+			.entry_opt("geodesic", &self.geodesic)
+			.entry_opt("fillColor", &self.fill.fill_color)
+			.entry_opt("fillOpacity", &self.fill.fill_opacity)
+			.entry_opt("strokePosition", &self.fill.stroke_position)
+			.entry_opt("strokeColor", &self.stroke.stroke_color)
+			.entry_opt("strokeOpacity", &self.stroke.stroke_opacity)
+			.entry_opt("strokeWeight", &self.stroke.stroke_weight)
+			.entry_opt("draggable", &self.common.draggable)
+			.entry_opt("editable", &self.common.editable)
+			.entry_opt("visible", &self.common.visible)
+			.entry_opt("zIndex", &self.common.z_index)
 			.finish()?;
 		f.write_str(")")?;
 		Ok(())
@@ -780,16 +780,16 @@ impl JavaScript for Rectangle {
 		f.write_object()
 			.entry("map", &MAP_IDENT)
 			.entry("bounds", &self.bounds)
-			.entry_maybe("fillColor", &self.fill.fill_color)
-			.entry_maybe("fillOpacity", &self.fill.fill_opacity)
-			.entry_maybe("strokePosition", &self.fill.stroke_position)
-			.entry_maybe("strokeColor", &self.stroke.stroke_color)
-			.entry_maybe("strokeOpacity", &self.stroke.stroke_opacity)
-			.entry_maybe("strokeWeight", &self.stroke.stroke_weight)
-			.entry_maybe("draggable", &self.common.draggable)
-			.entry_maybe("editable", &self.common.editable)
-			.entry_maybe("visible", &self.common.visible)
-			.entry_maybe("zIndex", &self.common.z_index)
+			.entry_opt("fillColor", &self.fill.fill_color)
+			.entry_opt("fillOpacity", &self.fill.fill_opacity)
+			.entry_opt("strokePosition", &self.fill.stroke_position)
+			.entry_opt("strokeColor", &self.stroke.stroke_color)
+			.entry_opt("strokeOpacity", &self.stroke.stroke_opacity)
+			.entry_opt("strokeWeight", &self.stroke.stroke_weight)
+			.entry_opt("draggable", &self.common.draggable)
+			.entry_opt("editable", &self.common.editable)
+			.entry_opt("visible", &self.common.visible)
+			.entry_opt("zIndex", &self.common.z_index)
 			.finish()?;
 		f.write_str(")")?;
 		Ok(())
@@ -921,16 +921,16 @@ impl JavaScript for Circle {
 			.entry("map", &MAP_IDENT)
 			.entry("center", &self.center)
 			.entry("radius", &self.radius)
-			.entry_maybe("fillColor", &self.fill.fill_color)
-			.entry_maybe("fillOpacity", &self.fill.fill_opacity)
-			.entry_maybe("strokePosition", &self.fill.stroke_position)
-			.entry_maybe("strokeColor", &self.stroke.stroke_color)
-			.entry_maybe("strokeOpacity", &self.stroke.stroke_opacity)
-			.entry_maybe("strokeWeight", &self.stroke.stroke_weight)
-			.entry_maybe("draggable", &self.common.draggable)
-			.entry_maybe("editable", &self.common.editable)
-			.entry_maybe("visible", &self.common.visible)
-			.entry_maybe("zIndex", &self.common.z_index)
+			.entry_opt("fillColor", &self.fill.fill_color)
+			.entry_opt("fillOpacity", &self.fill.fill_opacity)
+			.entry_opt("strokePosition", &self.fill.stroke_position)
+			.entry_opt("strokeColor", &self.stroke.stroke_color)
+			.entry_opt("strokeOpacity", &self.stroke.stroke_opacity)
+			.entry_opt("strokeWeight", &self.stroke.stroke_weight)
+			.entry_opt("draggable", &self.common.draggable)
+			.entry_opt("editable", &self.common.editable)
+			.entry_opt("visible", &self.common.visible)
+			.entry_opt("zIndex", &self.common.z_index)
 			.finish()?;
 		f.write_str(")")?;
 		Ok(())
