@@ -146,6 +146,7 @@ pub struct GoogleMap {
 	disable_default_gui: Option<bool>,
 	disable_double_click_zoom: Option<bool>,
 	markers: Vec<Marker>,
+	polylines: Vec<Polyline>,
 	polygons: Vec<Polygon>,
 	rectangles: Vec<Rectangle>,
 	circles: Vec<Circle>,
@@ -164,6 +165,7 @@ impl GoogleMap {
 			disable_default_gui: None,
 			disable_double_click_zoom: None,
 			markers: Vec::default(),
+			polylines: Vec::default(),
 			polygons: Vec::default(),
 			rectangles: Vec::default(),
 			circles: Vec::default(),
@@ -203,6 +205,18 @@ impl GoogleMap {
 	/// Add multiple markers at once.
 	pub fn markers(&mut self, markers: impl IntoIterator<Item=Marker>) -> &mut Self {
 		self.markers.extend(markers.into_iter());
+		self
+	}
+	
+	/// Add a polygon to the map.
+	pub fn polyline(&mut self, polyline: Polyline) -> &mut Self {
+		self.polylines.push(polyline);
+		self
+	}
+	
+	/// Add multiple polygons at once.
+	pub fn polylines(&mut self, polylines: impl IntoIterator<Item=Polyline>) -> &mut Self {
+		self.polylines.extend(polylines.into_iter());
 		self
 	}
 	
@@ -259,6 +273,14 @@ impl JavaScript for GoogleMap {
 		for marker in &self.markers {
 			f.write_str("\t\t")?;
 			marker.fmt_js(f)?;
+			f.write_str(";\n")?;
+		}
+		
+		f.write_str("\n")?;
+		
+		for polyline in &self.polylines {
+			f.write_str("\t\t")?;
+			polyline.fmt_js(f)?;
 			f.write_str(";\n")?;
 		}
 		
@@ -531,6 +553,118 @@ impl JavaScript for Marker {
 			.entry("map", &MAP_IDENT)
 			.entry("position", &self.position)
 			.entry_opt("label", &self.label)
+			.finish()?;
+		f.write_str(")")?;
+		Ok(())
+	}
+}
+
+
+/// A polyline is a linear overlay of connected line segments on the map.
+///
+/// # Examples
+/// ```
+/// use mapplot::google::{GoogleMap, MapType, Polyline};
+///
+/// let html = GoogleMap::new((0.0, 0.0), 1, "<your-apikey-here>")
+///     .polyline(Polyline::new([(11.1, 22.2), (33.3, 44.4), (-22.2, 11.1)]))
+///     .to_string();
+///
+/// std::fs::write("map.html", html).unwrap();
+/// ```
+#[derive(Debug, Clone)]
+pub struct Polyline {
+	path: Vec<LatLng>,
+	geodesic: Option<bool>,
+	stroke: StrokeOptions,
+	common: CommonOptions,
+}
+
+
+impl Polyline {
+	/// Create a new Polyline.
+	#[must_use]
+	pub fn new(points: impl IntoIterator<Item=impl Into<LatLng>>) -> Self {
+		Polyline {
+			path: points.into_iter().map(Into::into).collect(),
+			geodesic: None,
+			stroke: StrokeOptions::default(),
+			common: CommonOptions::default(),
+		}
+	}
+	
+	/// When `true`, edges of the polygon are interpreted as geodesic and will follow the curvature of the Earth. When `false`, edges of the polygon are rendered as straight lines in screen space. Note that the shape of a geodesic polygon may appear to change when dragged, as the dimensions are maintained relative to the surface of the earth. Defaults to `false`.
+	#[must_use]
+	pub fn geodesic(mut self, value: bool) -> Self {
+		self.geodesic = Some(value);
+		self
+	}
+	
+	/// The stroke color.
+	#[must_use]
+	pub fn color(mut self, value: Color) -> Self {
+		self.stroke.stroke_color = Some(value);
+		self
+	}
+	
+	/// The stroke opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn opacity(mut self, value: f32) -> Self {
+		self.stroke.stroke_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke width in pixels.
+	#[must_use]
+	pub fn weight(mut self, value: usize) -> Self {
+		self.stroke.stroke_weight = Some(value);
+		self
+	}
+	
+	/// If set to `true`, the user can drag this shape over the map. The `geodesic` property defines the mode of dragging. Defaults to `false`.
+	#[must_use]
+	pub fn draggable(mut self, value: bool) -> Self {
+		self.common.draggable = Some(value);
+		self
+	}
+	
+	/// If set to `true`, the user can edit this shape by dragging the control points shown at the vertices and on each segment. Defaults to `false`.
+	#[must_use]
+	pub fn editable(mut self, value: bool) -> Self {
+		self.common.editable = Some(value);
+		self
+	}
+	
+	/// Whether this polyline is visible on the map. Defaults to `true`.
+	#[must_use]
+	pub fn visible(mut self, value: bool) -> Self {
+		self.common.visible = Some(value);
+		self
+	}
+	
+	/// The z-index compared to other polygons.
+	#[must_use]
+	pub fn z_index(mut self, value: isize) -> Self {
+		self.common.z_index = Some(value);
+		self
+	}
+}
+
+
+impl JavaScript for Polyline {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("new google.maps.Polyline(")?;
+		f.write_object()
+			.entry("map", &MAP_IDENT)
+			.entry("path", &self.path)
+			.entry_opt("geodesic", &self.geodesic)
+			.entry_opt("strokeColor", &self.stroke.stroke_color)
+			.entry_opt("strokeOpacity", &self.stroke.stroke_opacity)
+			.entry_opt("strokeWeight", &self.stroke.stroke_weight)
+			.entry_opt("draggable", &self.common.draggable)
+			.entry_opt("editable", &self.common.editable)
+			.entry_opt("visible", &self.common.visible)
+			.entry_opt("zIndex", &self.common.z_index)
 			.finish()?;
 		f.write_str(")")?;
 		Ok(())
