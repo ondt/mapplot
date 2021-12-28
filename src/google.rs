@@ -136,7 +136,7 @@ impl<'a> Display for RawIdent<'a> {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GoogleMap {
 	apikey: String,
 	center: LatLng,
@@ -421,6 +421,13 @@ impl From<(f64, f64)> for LatLng {
 }
 
 
+impl From<Marker> for LatLng {
+	fn from(m: Marker) -> Self {
+		m.position
+	}
+}
+
+
 impl JavaScript for LatLng {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		write!(f, "new google.maps.LatLng({}, {})", self.lat, self.lon)
@@ -455,7 +462,7 @@ impl JavaScript for LatLngBounds {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Marker {
 	position: LatLng,
 	label: Option<String>,
@@ -508,7 +515,7 @@ impl JavaScript for Marker {
 /// use mapplot::google::{GoogleMap, MapType, Polygon};
 ///
 /// let html = GoogleMap::new((0.0, 0.0), 1, MapType::Roadmap, "<your-apikey-here>")
-///     .polygon(Polygon::new([(11.1, 22.2), (33.3, 44.4), (-33.3, -44.4), (-22.2, 11.1)]))
+///     .polygon(Polygon::new([(11.1, 22.2), (33.3, 44.4), (-22.2, 11.1)]))
 ///     .to_string();
 ///
 /// std::fs::write("map.html", html).unwrap();
@@ -794,7 +801,13 @@ impl JavaScript for Rectangle {
 ///
 /// # Examples
 /// ```
-/// todo!()
+/// use mapplot::google::{GoogleMap, MapType, Circle};
+///
+/// let html = GoogleMap::new((0.0, 0.0), 1, MapType::Roadmap, "<your-apikey-here>")
+///     .circle(Circle::new((22.2, 33.3), 30_000.0))
+///     .to_string();
+///
+/// std::fs::write("map.html", html).unwrap();
 /// ```
 #[derive(Debug, Copy, Clone)]
 pub struct Circle {
@@ -809,14 +822,11 @@ pub struct Circle {
 impl Circle {
 	/// Create a new circle.
 	///
-	/// # Arguments
-	/// * `lat`: Latitude in degrees.
-	/// * `lon`: Longitude in degrees.
-	/// * `radius`: The radius in meters on the Earth's surface.
+	/// `radius` is the radius in meters on the Earth's surface.
 	#[must_use]
-	pub fn new(lat: f64, lon: f64, radius: f64) -> Self {
+	pub fn new(center: impl Into<LatLng>, radius: f64) -> Self {
 		Circle {
-			center: LatLng { lat, lon },
+			center: center.into(),
 			radius,
 			fill: FillOptions::default(),
 			stroke: StrokeOptions::default(),
