@@ -98,6 +98,24 @@ impl JavaScript for String {
 }
 
 
+impl<T: JavaScript> JavaScript for Vec<T> {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("[")?;
+		let mut first = true;
+		for item in self {
+			if first {
+				first = false;
+			} else {
+				f.write_str(", ")?;
+			}
+			item.fmt_js(f)?;
+		}
+		f.write_str("]")?;
+		Ok(())
+	}
+}
+
+
 const MAP_IDENT: RawIdent<'static> = RawIdent("__map");
 
 
@@ -128,6 +146,7 @@ pub struct GoogleMap {
 	markers: Vec<Marker>,
 	circles: Vec<Circle>,
 	rectangles: Vec<Rectangle>,
+	polygons: Vec<Polygon>,
 }
 
 
@@ -143,6 +162,7 @@ impl GoogleMap {
 			markers: Vec::default(),
 			circles: Vec::default(),
 			rectangles: Vec::default(),
+			polygons: Vec::default(),
 		}
 	}
 	
@@ -180,6 +200,16 @@ impl GoogleMap {
 		self.rectangles.extend(rectangles.into_iter());
 		self
 	}
+	
+	pub fn polygon(&mut self, polygon: Polygon) -> &mut Self {
+		self.polygons.push(polygon);
+		self
+	}
+	
+	pub fn polygons(&mut self, polygons: impl IntoIterator<Item=Polygon>) -> &mut Self {
+		self.polygons.extend(polygons.into_iter());
+		self
+	}
 }
 
 
@@ -212,6 +242,14 @@ impl JavaScript for GoogleMap {
 		for rectangle in &self.rectangles {
 			f.write_str("\t\t")?;
 			rectangle.fmt_js(f)?;
+			f.write_str(";\n")?;
+		}
+		
+		f.write_str("\n")?;
+		
+		for polygon in &self.polygons {
+			f.write_str("\t\t")?;
+			polygon.fmt_js(f)?;
 			f.write_str(";\n")?;
 		}
 		
@@ -620,7 +658,7 @@ pub struct Rectangle {
 
 
 impl Rectangle {
-	/// Create a new Rectangle by specifying its south-west and north-east corners.
+	/// Create a new Rectangle by specifying any two locations.
 	#[must_use]
 	pub fn new(p1: impl Into<LatLng>, p2: impl Into<LatLng>) -> Self {
 		Rectangle {
@@ -717,6 +755,162 @@ impl JavaScript for Rectangle {
 		f.write_object()
 			.entry("map", &MAP_IDENT)
 			.entry("bounds", &self.bounds)
+			.entry_maybe("fillColor", &self.fill.fill_color)
+			.entry_maybe("fillOpacity", &self.fill.fill_opacity)
+			.entry_maybe("strokePosition", &self.fill.stroke_position)
+			.entry_maybe("strokeColor", &self.stroke.stroke_color)
+			.entry_maybe("strokeOpacity", &self.stroke.stroke_opacity)
+			.entry_maybe("strokeWeight", &self.stroke.stroke_weight)
+			.entry_maybe("draggable", &self.common.draggable)
+			.entry_maybe("editable", &self.common.editable)
+			.entry_maybe("visible", &self.common.visible)
+			.entry_maybe("zIndex", &self.common.z_index)
+			.finish()?;
+		f.write_str(")")?;
+		Ok(())
+	}
+}
+
+
+/// A geodesic or non-geodesic polygon.
+///
+/// A polygon (like a polyline) defines a series of connected coordinates in an ordered sequence. Additionally,
+/// polygons form a closed loop and define a filled region.
+///
+/// # Examples
+/// ```
+/// use mapplot::google::{GoogleMap, MapType, Polygon};
+///
+/// let html = GoogleMap::new((0.0, 0.0), 1, MapType::Roadmap, "<your-apikey-here>")
+///     .polygon(Polygon::new([(11.1, 22.2), (33.3, 44.4), (-33.3, -44.4), (-22.2, 11.1)]))
+///     .to_string();
+///
+/// std::fs::write("map.html", html).unwrap();
+/// ```
+#[derive(Debug, Clone)]
+pub struct Polygon {
+	paths: Vec<Vec<LatLng>>,
+	geodesic: Option<bool>,
+	fill: FillOptions,
+	stroke: StrokeOptions,
+	common: CommonOptions,
+}
+
+
+impl Polygon {
+	/// Create a new Polygon.
+	#[must_use]
+	pub fn new(points: impl IntoIterator<Item=impl Into<LatLng>>) -> Self {
+		Polygon {
+			paths: vec![points.into_iter().map(Into::into).collect()],
+			geodesic: None,
+			fill: FillOptions::default(),
+			stroke: StrokeOptions::default(),
+			common: CommonOptions::default(),
+		}
+	}
+	
+	/// Add a new path to the polygon. Points forming an inner path need to wind in the opposite direction to those in an outer path to form a hole.
+	#[must_use]
+	pub fn path(mut self, points: impl IntoIterator<Item=impl Into<LatLng>>) -> Self {
+		self.paths.push(points.into_iter().map(Into::into).collect());
+		self
+	}
+	
+	/// When `true`, edges of the polygon are interpreted as geodesic and will follow the curvature of the Earth. When `false`, edges of the polygon are rendered as straight lines in screen space. Note that the shape of a geodesic polygon may appear to change when dragged, as the dimensions are maintained relative to the surface of the earth. Defaults to `false`.
+	#[must_use]
+	pub fn geodesic(mut self, value: bool) -> Self {
+		self.geodesic = Some(value);
+		self
+	}
+	
+	/// Set both `fill_color` and `stroke_color`.
+	#[must_use]
+	pub fn color(mut self, value: Color) -> Self {
+		self.fill.fill_color = Some(value);
+		self.stroke.stroke_color = Some(value);
+		self
+	}
+	
+	/// The fill color.
+	#[must_use]
+	pub fn fill_color(mut self, value: Color) -> Self {
+		self.fill.fill_color = Some(value);
+		self
+	}
+	
+	/// The fill opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn fill_opacity(mut self, value: f32) -> Self {
+		self.fill.fill_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke position. Defaults to [`StrokePosition::Center`]. This property is not supported on Internet Explorer 8 and earlier.
+	#[must_use]
+	pub fn stroke_position(mut self, value: StrokePosition) -> Self {
+		self.fill.stroke_position = Some(value);
+		self
+	}
+	
+	/// The stroke color.
+	#[must_use]
+	pub fn stroke_color(mut self, value: Color) -> Self {
+		self.stroke.stroke_color = Some(value);
+		self
+	}
+	
+	/// The stroke opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn stroke_opacity(mut self, value: f32) -> Self {
+		self.stroke.stroke_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke width in pixels.
+	#[must_use]
+	pub fn stroke_weight(mut self, value: usize) -> Self {
+		self.stroke.stroke_weight = Some(value);
+		self
+	}
+	
+	/// If set to `true`, the user can drag this shape over the map. The `geodesic` property defines the mode of dragging. Defaults to `false`.
+	#[must_use]
+	pub fn draggable(mut self, value: bool) -> Self {
+		self.common.draggable = Some(value);
+		self
+	}
+	
+	/// If set to `true`, the user can edit this shape by dragging the control points shown at the vertices and on each segment. Defaults to `false`.
+	#[must_use]
+	pub fn editable(mut self, value: bool) -> Self {
+		self.common.editable = Some(value);
+		self
+	}
+	
+	/// Whether this polygon is visible on the map. Defaults to `true`.
+	#[must_use]
+	pub fn visible(mut self, value: bool) -> Self {
+		self.common.visible = Some(value);
+		self
+	}
+	
+	/// The z-index compared to other polygons.
+	#[must_use]
+	pub fn z_index(mut self, value: isize) -> Self {
+		self.common.z_index = Some(value);
+		self
+	}
+}
+
+
+impl JavaScript for Polygon {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("new google.maps.Polygon(")?;
+		f.write_object()
+			.entry("map", &MAP_IDENT)
+			.entry("paths", &self.paths)
+			.entry_maybe("geodesic", &self.geodesic)
 			.entry_maybe("fillColor", &self.fill.fill_color)
 			.entry_maybe("fillOpacity", &self.fill.fill_opacity)
 			.entry_maybe("strokePosition", &self.fill.stroke_position)
