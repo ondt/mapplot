@@ -144,9 +144,9 @@ pub struct GoogleMap {
 	map_type: MapType,
 	title: Option<String>,
 	markers: Vec<Marker>,
-	circles: Vec<Circle>,
-	rectangles: Vec<Rectangle>,
 	polygons: Vec<Polygon>,
+	rectangles: Vec<Rectangle>,
+	circles: Vec<Circle>,
 }
 
 
@@ -160,9 +160,9 @@ impl GoogleMap {
 			map_type,
 			title: None,
 			markers: Vec::default(),
-			circles: Vec::default(),
-			rectangles: Vec::default(),
 			polygons: Vec::default(),
+			rectangles: Vec::default(),
+			circles: Vec::default(),
 		}
 	}
 	
@@ -181,13 +181,13 @@ impl GoogleMap {
 		self
 	}
 	
-	pub fn circle(&mut self, circle: Circle) -> &mut Self {
-		self.circles.push(circle);
+	pub fn polygon(&mut self, polygon: Polygon) -> &mut Self {
+		self.polygons.push(polygon);
 		self
 	}
 	
-	pub fn circles(&mut self, circles: impl IntoIterator<Item=Circle>) -> &mut Self {
-		self.circles.extend(circles.into_iter());
+	pub fn polygons(&mut self, polygons: impl IntoIterator<Item=Polygon>) -> &mut Self {
+		self.polygons.extend(polygons.into_iter());
 		self
 	}
 	
@@ -201,13 +201,13 @@ impl GoogleMap {
 		self
 	}
 	
-	pub fn polygon(&mut self, polygon: Polygon) -> &mut Self {
-		self.polygons.push(polygon);
+	pub fn circle(&mut self, circle: Circle) -> &mut Self {
+		self.circles.push(circle);
 		self
 	}
 	
-	pub fn polygons(&mut self, polygons: impl IntoIterator<Item=Polygon>) -> &mut Self {
-		self.polygons.extend(polygons.into_iter());
+	pub fn circles(&mut self, circles: impl IntoIterator<Item=Circle>) -> &mut Self {
+		self.circles.extend(circles.into_iter());
 		self
 	}
 }
@@ -231,9 +231,9 @@ impl JavaScript for GoogleMap {
 		
 		f.write_str("\n")?;
 		
-		for circle in &self.circles {
+		for polygon in &self.polygons {
 			f.write_str("\t\t")?;
-			circle.fmt_js(f)?;
+			polygon.fmt_js(f)?;
 			f.write_str(";\n")?;
 		}
 		
@@ -247,9 +247,9 @@ impl JavaScript for GoogleMap {
 		
 		f.write_str("\n")?;
 		
-		for polygon in &self.polygons {
+		for circle in &self.circles {
 			f.write_str("\t\t")?;
-			polygon.fmt_js(f)?;
+			circle.fmt_js(f)?;
 			f.write_str(";\n")?;
 		}
 		
@@ -498,280 +498,6 @@ impl JavaScript for Marker {
 }
 
 
-/// A circle on the Earth's surface; also known as a "spherical cap".
-///
-/// # Examples
-/// ```
-/// todo!()
-/// ```
-#[derive(Debug, Copy, Clone)]
-pub struct Circle {
-	center: LatLng,
-	radius: f64,
-	fill: FillOptions,
-	stroke: StrokeOptions,
-	common: CommonOptions,
-}
-
-
-impl Circle {
-	/// Create a new circle.
-	///
-	/// # Arguments
-	/// * `lat`: Latitude in degrees.
-	/// * `lon`: Longitude in degrees.
-	/// * `radius`: The radius in meters on the Earth's surface.
-	#[must_use]
-	pub fn new(lat: f64, lon: f64, radius: f64) -> Self {
-		Circle {
-			center: LatLng { lat, lon },
-			radius,
-			fill: FillOptions::default(),
-			stroke: StrokeOptions::default(),
-			common: CommonOptions::default(),
-		}
-	}
-	
-	/// Set both `fill_color` and `stroke_color`.
-	#[must_use]
-	pub fn color(mut self, value: Color) -> Self {
-		self.fill.fill_color = Some(value);
-		self.stroke.stroke_color = Some(value);
-		self
-	}
-	
-	/// The fill color.
-	#[must_use]
-	pub fn fill_color(mut self, value: Color) -> Self {
-		self.fill.fill_color = Some(value);
-		self
-	}
-	
-	/// The fill opacity between 0.0 and 1.0.
-	#[must_use]
-	pub fn fill_opacity(mut self, value: f32) -> Self {
-		self.fill.fill_opacity = Some(value);
-		self
-	}
-	
-	/// The stroke position. Defaults to [`StrokePosition::Center`]. This property is not supported on Internet Explorer 8 and earlier.
-	#[must_use]
-	pub fn stroke_position(mut self, value: StrokePosition) -> Self {
-		self.fill.stroke_position = Some(value);
-		self
-	}
-	
-	/// The stroke color.
-	#[must_use]
-	pub fn stroke_color(mut self, value: Color) -> Self {
-		self.stroke.stroke_color = Some(value);
-		self
-	}
-	
-	/// The stroke opacity between 0.0 and 1.0.
-	#[must_use]
-	pub fn stroke_opacity(mut self, value: f32) -> Self {
-		self.stroke.stroke_opacity = Some(value);
-		self
-	}
-	
-	/// The stroke width in pixels.
-	#[must_use]
-	pub fn stroke_weight(mut self, value: usize) -> Self {
-		self.stroke.stroke_weight = Some(value);
-		self
-	}
-	
-	/// If set to `true`, the user can drag this circle over the map. Defaults to `false`.
-	#[must_use]
-	pub fn draggable(mut self, value: bool) -> Self {
-		self.common.draggable = Some(value);
-		self
-	}
-	
-	/// If set to `true`, the user can edit this circle by dragging the control points shown at the center and around the circumference of the circle. Defaults to `false`.
-	#[must_use]
-	pub fn editable(mut self, value: bool) -> Self {
-		self.common.editable = Some(value);
-		self
-	}
-	
-	/// Whether this circle is visible on the map. Defaults to `true`.
-	#[must_use]
-	pub fn visible(mut self, value: bool) -> Self {
-		self.common.visible = Some(value);
-		self
-	}
-	
-	/// The z-index compared to other polygons.
-	#[must_use]
-	pub fn z_index(mut self, value: isize) -> Self {
-		self.common.z_index = Some(value);
-		self
-	}
-}
-
-
-impl JavaScript for Circle {
-	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		f.write_str("new google.maps.Circle(")?;
-		f.write_object()
-			.entry("map", &MAP_IDENT)
-			.entry("center", &self.center)
-			.entry("radius", &self.radius)
-			.entry_maybe("fillColor", &self.fill.fill_color)
-			.entry_maybe("fillOpacity", &self.fill.fill_opacity)
-			.entry_maybe("strokePosition", &self.fill.stroke_position)
-			.entry_maybe("strokeColor", &self.stroke.stroke_color)
-			.entry_maybe("strokeOpacity", &self.stroke.stroke_opacity)
-			.entry_maybe("strokeWeight", &self.stroke.stroke_weight)
-			.entry_maybe("draggable", &self.common.draggable)
-			.entry_maybe("editable", &self.common.editable)
-			.entry_maybe("visible", &self.common.visible)
-			.entry_maybe("zIndex", &self.common.z_index)
-			.finish()?;
-		f.write_str(")")?;
-		Ok(())
-	}
-}
-
-
-/// A rectangle overlay.
-///
-/// # Examples
-/// ```
-/// use mapplot::google::{GoogleMap, MapType, Rectangle};
-///
-/// let html = GoogleMap::new((0.0, 0.0), 1, MapType::Roadmap, "<your-apikey-here>")
-///     .rectangle(Rectangle::new((11.1, 22.2), (33.3, 44.4)))
-///     .to_string();
-///
-/// std::fs::write("map.html", html).unwrap();
-/// ```
-#[derive(Debug, Copy, Clone)]
-pub struct Rectangle {
-	bounds: LatLngBounds,
-	fill: FillOptions,
-	stroke: StrokeOptions,
-	common: CommonOptions,
-}
-
-
-impl Rectangle {
-	/// Create a new Rectangle by specifying any two locations.
-	#[must_use]
-	pub fn new(p1: impl Into<LatLng>, p2: impl Into<LatLng>) -> Self {
-		Rectangle {
-			bounds: LatLngBounds::new(p1.into(), p2.into()),
-			fill: FillOptions::default(),
-			stroke: StrokeOptions::default(),
-			common: CommonOptions::default(),
-		}
-	}
-	
-	/// Set both `fill_color` and `stroke_color`.
-	#[must_use]
-	pub fn color(mut self, value: Color) -> Self {
-		self.fill.fill_color = Some(value);
-		self.stroke.stroke_color = Some(value);
-		self
-	}
-	
-	/// The fill color.
-	#[must_use]
-	pub fn fill_color(mut self, value: Color) -> Self {
-		self.fill.fill_color = Some(value);
-		self
-	}
-	
-	/// The fill opacity between 0.0 and 1.0.
-	#[must_use]
-	pub fn fill_opacity(mut self, value: f32) -> Self {
-		self.fill.fill_opacity = Some(value);
-		self
-	}
-	
-	/// The stroke position. Defaults to [`StrokePosition::Center`]. This property is not supported on Internet Explorer 8 and earlier.
-	#[must_use]
-	pub fn stroke_position(mut self, value: StrokePosition) -> Self {
-		self.fill.stroke_position = Some(value);
-		self
-	}
-	
-	/// The stroke color.
-	#[must_use]
-	pub fn stroke_color(mut self, value: Color) -> Self {
-		self.stroke.stroke_color = Some(value);
-		self
-	}
-	
-	/// The stroke opacity between 0.0 and 1.0.
-	#[must_use]
-	pub fn stroke_opacity(mut self, value: f32) -> Self {
-		self.stroke.stroke_opacity = Some(value);
-		self
-	}
-	
-	/// The stroke width in pixels.
-	#[must_use]
-	pub fn stroke_weight(mut self, value: usize) -> Self {
-		self.stroke.stroke_weight = Some(value);
-		self
-	}
-	
-	/// If set to `true`, the user can drag this rectangle over the map. Defaults to `false`.
-	#[must_use]
-	pub fn draggable(mut self, value: bool) -> Self {
-		self.common.draggable = Some(value);
-		self
-	}
-	
-	/// If set to `true`, the user can edit this rectangle by dragging the control points shown at the corners and on each edge. Defaults to `false`.
-	#[must_use]
-	pub fn editable(mut self, value: bool) -> Self {
-		self.common.editable = Some(value);
-		self
-	}
-	
-	/// Whether this rectangle is visible on the map. Defaults to `true`.
-	#[must_use]
-	pub fn visible(mut self, value: bool) -> Self {
-		self.common.visible = Some(value);
-		self
-	}
-	
-	/// The z-index compared to other polygons.
-	#[must_use]
-	pub fn z_index(mut self, value: isize) -> Self {
-		self.common.z_index = Some(value);
-		self
-	}
-}
-
-
-impl JavaScript for Rectangle {
-	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		f.write_str("new google.maps.Rectangle(")?;
-		f.write_object()
-			.entry("map", &MAP_IDENT)
-			.entry("bounds", &self.bounds)
-			.entry_maybe("fillColor", &self.fill.fill_color)
-			.entry_maybe("fillOpacity", &self.fill.fill_opacity)
-			.entry_maybe("strokePosition", &self.fill.stroke_position)
-			.entry_maybe("strokeColor", &self.stroke.stroke_color)
-			.entry_maybe("strokeOpacity", &self.stroke.stroke_opacity)
-			.entry_maybe("strokeWeight", &self.stroke.stroke_weight)
-			.entry_maybe("draggable", &self.common.draggable)
-			.entry_maybe("editable", &self.common.editable)
-			.entry_maybe("visible", &self.common.visible)
-			.entry_maybe("zIndex", &self.common.z_index)
-			.finish()?;
-		f.write_str(")")?;
-		Ok(())
-	}
-}
-
-
 /// A geodesic or non-geodesic polygon.
 ///
 /// A polygon (like a polyline) defines a series of connected coordinates in an ordered sequence. Additionally,
@@ -926,3 +652,278 @@ impl JavaScript for Polygon {
 		Ok(())
 	}
 }
+
+
+/// A rectangle overlay.
+///
+/// # Examples
+/// ```
+/// use mapplot::google::{GoogleMap, MapType, Rectangle};
+///
+/// let html = GoogleMap::new((0.0, 0.0), 1, MapType::Roadmap, "<your-apikey-here>")
+///     .rectangle(Rectangle::new((11.1, 22.2), (33.3, 44.4)))
+///     .to_string();
+///
+/// std::fs::write("map.html", html).unwrap();
+/// ```
+#[derive(Debug, Copy, Clone)]
+pub struct Rectangle {
+	bounds: LatLngBounds,
+	fill: FillOptions,
+	stroke: StrokeOptions,
+	common: CommonOptions,
+}
+
+
+impl Rectangle {
+	/// Create a new Rectangle by specifying any two locations.
+	#[must_use]
+	pub fn new(p1: impl Into<LatLng>, p2: impl Into<LatLng>) -> Self {
+		Rectangle {
+			bounds: LatLngBounds::new(p1.into(), p2.into()),
+			fill: FillOptions::default(),
+			stroke: StrokeOptions::default(),
+			common: CommonOptions::default(),
+		}
+	}
+	
+	/// Set both `fill_color` and `stroke_color`.
+	#[must_use]
+	pub fn color(mut self, value: Color) -> Self {
+		self.fill.fill_color = Some(value);
+		self.stroke.stroke_color = Some(value);
+		self
+	}
+	
+	/// The fill color.
+	#[must_use]
+	pub fn fill_color(mut self, value: Color) -> Self {
+		self.fill.fill_color = Some(value);
+		self
+	}
+	
+	/// The fill opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn fill_opacity(mut self, value: f32) -> Self {
+		self.fill.fill_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke position. Defaults to [`StrokePosition::Center`]. This property is not supported on Internet Explorer 8 and earlier.
+	#[must_use]
+	pub fn stroke_position(mut self, value: StrokePosition) -> Self {
+		self.fill.stroke_position = Some(value);
+		self
+	}
+	
+	/// The stroke color.
+	#[must_use]
+	pub fn stroke_color(mut self, value: Color) -> Self {
+		self.stroke.stroke_color = Some(value);
+		self
+	}
+	
+	/// The stroke opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn stroke_opacity(mut self, value: f32) -> Self {
+		self.stroke.stroke_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke width in pixels.
+	#[must_use]
+	pub fn stroke_weight(mut self, value: usize) -> Self {
+		self.stroke.stroke_weight = Some(value);
+		self
+	}
+	
+	/// If set to `true`, the user can drag this rectangle over the map. Defaults to `false`.
+	#[must_use]
+	pub fn draggable(mut self, value: bool) -> Self {
+		self.common.draggable = Some(value);
+		self
+	}
+	
+	/// If set to `true`, the user can edit this rectangle by dragging the control points shown at the corners and on each edge. Defaults to `false`.
+	#[must_use]
+	pub fn editable(mut self, value: bool) -> Self {
+		self.common.editable = Some(value);
+		self
+	}
+	
+	/// Whether this rectangle is visible on the map. Defaults to `true`.
+	#[must_use]
+	pub fn visible(mut self, value: bool) -> Self {
+		self.common.visible = Some(value);
+		self
+	}
+	
+	/// The z-index compared to other polygons.
+	#[must_use]
+	pub fn z_index(mut self, value: isize) -> Self {
+		self.common.z_index = Some(value);
+		self
+	}
+}
+
+
+impl JavaScript for Rectangle {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("new google.maps.Rectangle(")?;
+		f.write_object()
+			.entry("map", &MAP_IDENT)
+			.entry("bounds", &self.bounds)
+			.entry_maybe("fillColor", &self.fill.fill_color)
+			.entry_maybe("fillOpacity", &self.fill.fill_opacity)
+			.entry_maybe("strokePosition", &self.fill.stroke_position)
+			.entry_maybe("strokeColor", &self.stroke.stroke_color)
+			.entry_maybe("strokeOpacity", &self.stroke.stroke_opacity)
+			.entry_maybe("strokeWeight", &self.stroke.stroke_weight)
+			.entry_maybe("draggable", &self.common.draggable)
+			.entry_maybe("editable", &self.common.editable)
+			.entry_maybe("visible", &self.common.visible)
+			.entry_maybe("zIndex", &self.common.z_index)
+			.finish()?;
+		f.write_str(")")?;
+		Ok(())
+	}
+}
+
+
+/// A circle on the Earth's surface; also known as a "spherical cap".
+///
+/// # Examples
+/// ```
+/// todo!()
+/// ```
+#[derive(Debug, Copy, Clone)]
+pub struct Circle {
+	center: LatLng,
+	radius: f64,
+	fill: FillOptions,
+	stroke: StrokeOptions,
+	common: CommonOptions,
+}
+
+
+impl Circle {
+	/// Create a new circle.
+	///
+	/// # Arguments
+	/// * `lat`: Latitude in degrees.
+	/// * `lon`: Longitude in degrees.
+	/// * `radius`: The radius in meters on the Earth's surface.
+	#[must_use]
+	pub fn new(lat: f64, lon: f64, radius: f64) -> Self {
+		Circle {
+			center: LatLng { lat, lon },
+			radius,
+			fill: FillOptions::default(),
+			stroke: StrokeOptions::default(),
+			common: CommonOptions::default(),
+		}
+	}
+	
+	/// Set both `fill_color` and `stroke_color`.
+	#[must_use]
+	pub fn color(mut self, value: Color) -> Self {
+		self.fill.fill_color = Some(value);
+		self.stroke.stroke_color = Some(value);
+		self
+	}
+	
+	/// The fill color.
+	#[must_use]
+	pub fn fill_color(mut self, value: Color) -> Self {
+		self.fill.fill_color = Some(value);
+		self
+	}
+	
+	/// The fill opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn fill_opacity(mut self, value: f32) -> Self {
+		self.fill.fill_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke position. Defaults to [`StrokePosition::Center`]. This property is not supported on Internet Explorer 8 and earlier.
+	#[must_use]
+	pub fn stroke_position(mut self, value: StrokePosition) -> Self {
+		self.fill.stroke_position = Some(value);
+		self
+	}
+	
+	/// The stroke color.
+	#[must_use]
+	pub fn stroke_color(mut self, value: Color) -> Self {
+		self.stroke.stroke_color = Some(value);
+		self
+	}
+	
+	/// The stroke opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn stroke_opacity(mut self, value: f32) -> Self {
+		self.stroke.stroke_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke width in pixels.
+	#[must_use]
+	pub fn stroke_weight(mut self, value: usize) -> Self {
+		self.stroke.stroke_weight = Some(value);
+		self
+	}
+	
+	/// If set to `true`, the user can drag this circle over the map. Defaults to `false`.
+	#[must_use]
+	pub fn draggable(mut self, value: bool) -> Self {
+		self.common.draggable = Some(value);
+		self
+	}
+	
+	/// If set to `true`, the user can edit this circle by dragging the control points shown at the center and around the circumference of the circle. Defaults to `false`.
+	#[must_use]
+	pub fn editable(mut self, value: bool) -> Self {
+		self.common.editable = Some(value);
+		self
+	}
+	
+	/// Whether this circle is visible on the map. Defaults to `true`.
+	#[must_use]
+	pub fn visible(mut self, value: bool) -> Self {
+		self.common.visible = Some(value);
+		self
+	}
+	
+	/// The z-index compared to other polygons.
+	#[must_use]
+	pub fn z_index(mut self, value: isize) -> Self {
+		self.common.z_index = Some(value);
+		self
+	}
+}
+
+
+impl JavaScript for Circle {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("new google.maps.Circle(")?;
+		f.write_object()
+			.entry("map", &MAP_IDENT)
+			.entry("center", &self.center)
+			.entry("radius", &self.radius)
+			.entry_maybe("fillColor", &self.fill.fill_color)
+			.entry_maybe("fillOpacity", &self.fill.fill_opacity)
+			.entry_maybe("strokePosition", &self.fill.stroke_position)
+			.entry_maybe("strokeColor", &self.stroke.stroke_color)
+			.entry_maybe("strokeOpacity", &self.stroke.stroke_opacity)
+			.entry_maybe("strokeWeight", &self.stroke.stroke_weight)
+			.entry_maybe("draggable", &self.common.draggable)
+			.entry_maybe("editable", &self.common.editable)
+			.entry_maybe("visible", &self.common.visible)
+			.entry_maybe("zIndex", &self.common.z_index)
+			.finish()?;
+		f.write_str(")")?;
+		Ok(())
+	}
+}
+
