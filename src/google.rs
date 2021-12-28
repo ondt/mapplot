@@ -139,10 +139,12 @@ impl<'a> Display for RawIdent<'a> {
 #[derive(Debug, Clone)]
 pub struct GoogleMap {
 	apikey: String,
+	page_title: Option<String>,
 	center: LatLng,
 	zoom: u8,
-	map_type: MapType,
-	title: Option<String>,
+	map_type: Option<MapType>,
+	disable_default_gui: Option<bool>,
+	disable_double_click_zoom: Option<bool>,
 	markers: Vec<Marker>,
 	polygons: Vec<Polygon>,
 	rectangles: Vec<Rectangle>,
@@ -152,13 +154,15 @@ pub struct GoogleMap {
 
 impl GoogleMap {
 	// TODO: auto center & zoom
-	pub fn new(center: impl Into<LatLng>, zoom: u8, map_type: MapType, apikey: impl AsRef<str>) -> Self {
+	pub fn new(center: impl Into<LatLng>, zoom: u8, apikey: impl AsRef<str>) -> Self {
 		GoogleMap {
 			apikey: apikey.as_ref().to_string(),
+			page_title: None,
 			center: center.into(),
 			zoom,
-			map_type,
-			title: None,
+			map_type: None,
+			disable_default_gui: None,
+			disable_double_click_zoom: None,
 			markers: Vec::default(),
 			polygons: Vec::default(),
 			rectangles: Vec::default(),
@@ -166,46 +170,73 @@ impl GoogleMap {
 		}
 	}
 	
-	pub fn title(&mut self, title: impl AsRef<str>) -> &mut Self {
-		self.title = Some(String::from(title.as_ref()));
+	/// Set the title of the HTML page.
+	pub fn page_title(&mut self, value: impl AsRef<str>) -> &mut Self {
+		self.page_title = Some(value.as_ref().to_string());
 		self
 	}
 	
+	/// The initial map type. Defaults to [`MapType::Roadmap`].
+	pub fn map_type(&mut self, value: MapType) -> &mut Self {
+		self.map_type = Some(value);
+		self
+	}
+	
+	/// Enable/disable all default UI buttons.
+	pub fn disable_default_gui(&mut self, value: bool) -> &mut Self {
+		self.disable_default_gui = Some(value);
+		self
+	}
+	
+	/// Enable/disable zoom and center on double click. Enabled by default.
+	pub fn disable_double_click_zoom(&mut self, value: bool) -> &mut Self {
+		self.disable_double_click_zoom = Some(value);
+		self
+	}
+	
+	/// Add a marker to the map.
 	pub fn marker(&mut self, marker: Marker) -> &mut Self {
 		self.markers.push(marker);
 		self
 	}
 	
+	/// Add multiple markers at once.
 	pub fn markers(&mut self, markers: impl IntoIterator<Item=Marker>) -> &mut Self {
 		self.markers.extend(markers.into_iter());
 		self
 	}
 	
+	/// Add a polygon to the map.
 	pub fn polygon(&mut self, polygon: Polygon) -> &mut Self {
 		self.polygons.push(polygon);
 		self
 	}
 	
+	/// Add multiple polygons at once.
 	pub fn polygons(&mut self, polygons: impl IntoIterator<Item=Polygon>) -> &mut Self {
 		self.polygons.extend(polygons.into_iter());
 		self
 	}
 	
+	/// Add a rectangle to the map.
 	pub fn rectangle(&mut self, rectangle: Rectangle) -> &mut Self {
 		self.rectangles.push(rectangle);
 		self
 	}
 	
+	/// Add multiple rectangles at once.
 	pub fn rectangles(&mut self, rectangles: impl IntoIterator<Item=Rectangle>) -> &mut Self {
 		self.rectangles.extend(rectangles.into_iter());
 		self
 	}
 	
+	/// Add a circle to the map.
 	pub fn circle(&mut self, circle: Circle) -> &mut Self {
 		self.circles.push(circle);
 		self
 	}
 	
+	/// Add multiple circles at once.
 	pub fn circles(&mut self, circles: impl IntoIterator<Item=Circle>) -> &mut Self {
 		self.circles.extend(circles.into_iter());
 		self
@@ -219,7 +250,9 @@ impl JavaScript for GoogleMap {
 		f.write_object()
 			.entry("center", &self.center)
 			.entry("zoom", &self.zoom)
-			.entry("mapTypeId", &self.map_type)
+			.entry_opt("mapTypeId", &self.map_type)
+			.entry_opt("disableDefaultUI", &self.disable_default_gui)
+			.entry_opt("disableDoubleClickZoom", &self.disable_double_click_zoom)
 			.finish()?;
 		f.write_str(");\n\n")?;
 		
@@ -269,7 +302,7 @@ impl Display for GoogleMap {
 <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=visualization&sensor=true_or_false&key={apikey}"></script>
 <script type="text/javascript">
 	function initialize() {{
-"#, title = if let Some(t) = &self.title { t.as_str() } else { "Default Title" }, apikey = self.apikey)?;
+"#, title = if let Some(t) = &self.page_title { t.as_str() } else { "Google Maps - mapplot" }, apikey = self.apikey)?;
 		
 		self.fmt_js(f)?;
 		
@@ -514,7 +547,7 @@ impl JavaScript for Marker {
 /// ```
 /// use mapplot::google::{GoogleMap, MapType, Polygon};
 ///
-/// let html = GoogleMap::new((0.0, 0.0), 1, MapType::Roadmap, "<your-apikey-here>")
+/// let html = GoogleMap::new((0.0, 0.0), 1, "<your-apikey-here>")
 ///     .polygon(Polygon::new([(11.1, 22.2), (33.3, 44.4), (-22.2, 11.1)]))
 ///     .to_string();
 ///
@@ -667,7 +700,7 @@ impl JavaScript for Polygon {
 /// ```
 /// use mapplot::google::{GoogleMap, MapType, Rectangle};
 ///
-/// let html = GoogleMap::new((0.0, 0.0), 1, MapType::Roadmap, "<your-apikey-here>")
+/// let html = GoogleMap::new((0.0, 0.0), 1, "<your-apikey-here>")
 ///     .rectangle(Rectangle::new((11.1, 22.2), (33.3, 44.4)))
 ///     .to_string();
 ///
@@ -803,7 +836,7 @@ impl JavaScript for Rectangle {
 /// ```
 /// use mapplot::google::{GoogleMap, MapType, Circle};
 ///
-/// let html = GoogleMap::new((0.0, 0.0), 1, MapType::Roadmap, "<your-apikey-here>")
+/// let html = GoogleMap::new((0.0, 0.0), 1, "<your-apikey-here>")
 ///     .circle(Circle::new((22.2, 33.3), 30_000.0))
 ///     .to_string();
 ///
