@@ -1,6 +1,6 @@
 use std::fmt::{self, Debug, Display, Formatter};
 
-use crate::{LatLng, LatLngBounds};
+use crate::{BoundingBox, Location};
 use crate::google::style::{Color, PolygonStyle, PolylineStyle, StrokePosition};
 
 
@@ -122,14 +122,14 @@ impl<T: JavaScript> JavaScript for Vec<T> {
 }
 
 
-impl JavaScript for LatLng {
+impl JavaScript for Location {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		write!(f, "new google.maps.LatLng({}, {})", self.lat, self.lon)
 	}
 }
 
 
-impl JavaScript for LatLngBounds {
+impl JavaScript for BoundingBox {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.write_str("new google.maps.LatLngBounds(")?;
 		self.p1.fmt_js(f)?;
@@ -183,7 +183,7 @@ impl<'a> JavaScript for RawIdent<'a> {
 pub struct GoogleMap {
 	apikey: String,
 	page_title: Option<String>,
-	center: LatLng,
+	center: Location,
 	zoom: u8,
 	map_type: Option<MapType>,
 	disable_default_gui: Option<bool>,
@@ -194,7 +194,7 @@ pub struct GoogleMap {
 
 impl GoogleMap {
 	// TODO: auto center & zoom
-	pub fn new(center: impl Into<LatLng>, zoom: u8, apikey: impl AsRef<str>) -> Self {
+	pub fn new(center: impl Into<Location>, zoom: u8, apikey: impl AsRef<str>) -> Self {
 		GoogleMap {
 			apikey: apikey.as_ref().to_string(),
 			page_title: None,
@@ -339,7 +339,7 @@ struct CommonOptions {
 
 #[derive(Debug, Clone)]
 pub struct Marker {
-	position: LatLng,
+	position: Location,
 	label: Option<String>,
 	title: Option<String>,
 	opacity: Option<f64>,
@@ -349,7 +349,7 @@ pub struct Marker {
 
 impl Marker {
 	#[must_use]
-	pub fn new(pos: impl Into<LatLng>) -> Self {
+	pub fn new(pos: impl Into<Location>) -> Self {
 		Marker {
 			position: pos.into(),
 			label: None,
@@ -380,7 +380,7 @@ impl JavaScript for Marker {
 }
 
 
-impl From<Marker> for LatLng {
+impl From<Marker> for Location {
 	fn from(m: Marker) -> Self {
 		m.position
 	}
@@ -401,7 +401,7 @@ impl From<Marker> for LatLng {
 /// ```
 #[derive(Debug, Clone)]
 pub struct Polyline {
-	path: Vec<LatLng>,
+	path: Vec<Location>,
 	geodesic: Option<bool>,
 	style: PolylineStyle,
 	common: CommonOptions,
@@ -411,7 +411,7 @@ pub struct Polyline {
 impl Polyline {
 	/// Create a new Polyline.
 	#[must_use]
-	pub fn new(points: impl IntoIterator<Item=impl Into<LatLng>>) -> Self {
+	pub fn new(points: impl IntoIterator<Item=impl Into<Location>>) -> Self {
 		Polyline {
 			path: points.into_iter().map(Into::into).collect(),
 			geodesic: None,
@@ -502,7 +502,7 @@ impl JavaScript for Polyline {
 /// ```
 #[derive(Debug, Clone)]
 pub struct Polygon {
-	paths: Vec<Vec<LatLng>>,
+	paths: Vec<Vec<Location>>,
 	geodesic: Option<bool>,
 	style: PolygonStyle,
 	common: CommonOptions,
@@ -512,7 +512,7 @@ pub struct Polygon {
 impl Polygon {
 	/// Create a new Polygon.
 	#[must_use]
-	pub fn new(points: impl IntoIterator<Item=impl Into<LatLng>>) -> Self {
+	pub fn new(points: impl IntoIterator<Item=impl Into<Location>>) -> Self {
 		Polygon {
 			paths: vec![points.into_iter().map(Into::into).collect()],
 			geodesic: None,
@@ -523,7 +523,7 @@ impl Polygon {
 	
 	/// Add a new path to the polygon. Points forming an inner path need to wind in the opposite direction to those in an outer path to form a hole.
 	#[must_use]
-	pub fn path(mut self, points: impl IntoIterator<Item=impl Into<LatLng>>) -> Self {
+	pub fn path(mut self, points: impl IntoIterator<Item=impl Into<Location>>) -> Self {
 		self.paths.push(points.into_iter().map(Into::into).collect());
 		self
 	}
@@ -610,7 +610,7 @@ impl JavaScript for Polygon {
 /// ```
 #[derive(Debug, Copy, Clone)]
 pub struct Rectangle {
-	bounds: LatLngBounds,
+	bounds: BoundingBox,
 	style: PolygonStyle,
 	common: CommonOptions,
 }
@@ -619,9 +619,9 @@ pub struct Rectangle {
 impl Rectangle {
 	/// Create a new Rectangle by specifying any two locations.
 	#[must_use]
-	pub fn new(p1: impl Into<LatLng>, p2: impl Into<LatLng>) -> Self {
+	pub fn new(p1: impl Into<Location>, p2: impl Into<Location>) -> Self {
 		Rectangle {
-			bounds: LatLngBounds::new(p1.into(), p2.into()),
+			bounds: BoundingBox::new(p1.into(), p2.into()),
 			style: PolygonStyle::default(),
 			common: CommonOptions::default(),
 		}
@@ -701,7 +701,7 @@ impl JavaScript for Rectangle {
 /// ```
 #[derive(Debug, Copy, Clone)]
 pub struct Circle {
-	center: LatLng,
+	center: Location,
 	radius: f64,
 	style: PolygonStyle,
 	common: CommonOptions,
@@ -713,7 +713,7 @@ impl Circle {
 	///
 	/// `radius` is the radius in meters on the Earth's surface.
 	#[must_use]
-	pub fn new(center: impl Into<LatLng>, radius: f64) -> Self {
+	pub fn new(center: impl Into<Location>, radius: f64) -> Self {
 		Circle {
 			center: center.into(),
 			radius,

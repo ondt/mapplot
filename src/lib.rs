@@ -36,45 +36,45 @@ fn hijack_formatter(f: impl Fn(&mut Formatter<'_>) -> fmt::Result) -> String {
 
 
 #[derive(Debug, Copy, Clone)]
-pub struct LatLng {
+pub struct Location {
 	lat: f64,
 	lon: f64,
 }
 
 
-impl LatLng {
+impl Location {
 	#[must_use]
 	pub fn new(lat: f64, lon: f64) -> Self {
-		LatLng { lat, lon }
+		Location { lat, lon }
 	}
 }
 
 
-impl From<(f64, f64)> for LatLng {
+impl From<(f64, f64)> for Location {
 	fn from((lat, lon): (f64, f64)) -> Self {
-		LatLng { lat, lon }
+		Location { lat, lon }
 	}
 }
 
 
 // TODO: AsRef?
-impl From<&(f64, f64)> for LatLng {
+impl From<&(f64, f64)> for Location {
 	fn from((lat, lon): &(f64, f64)) -> Self {
-		LatLng { lat: *lat, lon: *lon }
+		Location { lat: *lat, lon: *lon }
 	}
 }
 
 
 #[derive(Debug, Copy, Clone)]
-pub struct LatLngBounds {
-	p1: LatLng,
-	p2: LatLng,
+pub struct BoundingBox {
+	p1: Location,
+	p2: Location,
 }
 
 
-impl LatLngBounds {
+impl BoundingBox {
 	#[must_use]
-	pub fn new(p1: LatLng, p2: LatLng) -> Self {
-		LatLngBounds { p1, p2 }
+	pub fn new(p1: Location, p2: Location) -> Self {
+		BoundingBox { p1, p2 }
 	}
 }
