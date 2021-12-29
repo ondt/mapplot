@@ -1,5 +1,5 @@
 # `mapplot` - A map plotter library for Rust
-`mapplot` is a Rust library that plots all kinds of data on all kinds of maps.
+_mapplot_ is a Rust library that plots all kinds of data on all kinds of maps.
 
 It provides plotters for generating interactive maps (`mapplot::google`, ~~`mapplot::mapbox`~~) and static images
 (~~`mapplot::raster`~~, ~~`mapplot::svg`~~).
@@ -20,7 +20,7 @@ It provides plotters for generating interactive maps (`mapplot::google`, ~~`mapp
 
 ```rust
 use std::fs;
-use mapplot::google::{Circle, Color, GoogleMap, Marker, Polygon, Polyline, Rectangle};
+use mapplot::google::{Circle, GoogleMap, Marker, Polygon, Polyline, Rectangle, style::Color};
 
 fn main() {
     let netherlands = [
@@ -59,14 +59,13 @@ fn main() {
         (46.4086133, 8.4121003),
         (45.8274156, 9.0094792),
         (46.4741242, 9.3507219),
-        (46.2297483, 10.1575419),
-        (46.5731435, 10.0682603),
-        (46.5810388, 10.4967421),
-        (46.9718163, 10.4143382),
+        (46.2297483, 10.157541),
+        (46.5731435, 10.068260),
+        (46.5810388, 10.496742),
+        (46.9718163, 10.414338),
         (47.0381692, 9.6020123),
         (47.5320018, 9.6006684),
         (47.7892979, 8.5809824),
-        (47.5976076, 8.1243554),
     ];
     
     let bern = [
@@ -75,16 +74,15 @@ fn main() {
         (47.0593473, 7.6190164),
         (46.8390079, 7.6863061),
         (46.7638649, 7.3683927),
-        (46.9666268, 7.1781895),
     ];
     
     let html = GoogleMap::new((49.7973, 5.4173), 6, "<your-apikey-here>")
-        .marker(Marker::new((51.507, -0.127)).label("A"))  // London
-        .marker(Marker::new((52.48, -1.902))) // Birmingham
-        .polyline(Polyline::new(netherlands).color(Color::Red))
-        .polygon(Polygon::new(switzerland).path(bern).color(Color::Red))
-        .rectangle(Rectangle::new((53.0833, 8.8), (51.3333, 12.3833)).color(Color::Green).editable(true).draggable(true))
-        .circle(Circle::new((48.856, 2.352), 100_000.0).color(Color::HSL(200, 128, 100))) // Paris
+        .draw(Marker::new((51.507, -0.127)).label("A").title("London"))
+        .draw(Marker::new((52.48, -1.902)).title("Birmingham"))
+        .draw(Polyline::new(netherlands).style(Color::Red))
+        .draw(Polygon::new(switzerland).path(bern).style(Color::Red))
+        .draw(Rectangle::new((53.0833, 8.8), (51.3333, 12.3833)).style(Color::Green).editable(true).draggable(true))
+        .draw(Circle::new((48.856, 2.352), 100_000.0).style(Color::HSL(200, 128, 100))) // Paris
         .to_string();
     
     fs::write("map.html", html).unwrap();
