@@ -292,18 +292,132 @@ struct CommonOptions {
 
 
 #[derive(Default, Debug, Copy, Clone)]
-struct StrokeOptions {
+pub struct PolylineStyle {
 	stroke_color: Option<Color>,
 	stroke_opacity: Option<f32>,
 	stroke_weight: Option<usize>,
 }
 
 
+impl PolylineStyle {
+	/// Create a new empty (default) polyline style.
+	#[must_use]
+	pub fn new() -> Self {
+		PolylineStyle::default()
+	}
+	
+	/// The stroke color.
+	#[must_use]
+	pub fn color(mut self, value: Color) -> Self {
+		self.stroke_color = Some(value);
+		self
+	}
+	
+	/// The stroke opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn opacity(mut self, value: f32) -> Self {
+		self.stroke_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke width in pixels.
+	#[must_use]
+	pub fn weight(mut self, value: usize) -> Self {
+		self.stroke_weight = Some(value);
+		self
+	}
+}
+
+
+impl From<Color> for PolylineStyle {
+	fn from(c: Color) -> Self {
+		PolylineStyle::default().color(c)
+	}
+}
+
+
 #[derive(Default, Debug, Copy, Clone)]
-struct FillOptions {
+pub struct PolygonStyle {
 	fill_color: Option<Color>,
 	fill_opacity: Option<f32>,
 	stroke_position: Option<StrokePosition>,
+	stroke_color: Option<Color>,
+	stroke_opacity: Option<f32>,
+	stroke_weight: Option<usize>,
+}
+
+
+impl PolygonStyle {
+	/// Create a new empty (default) polygon style.
+	#[must_use]
+	pub fn new() -> Self {
+		PolygonStyle::default()
+	}
+	
+	/// Set both `fill_color` and `stroke_color`.
+	#[must_use]
+	pub fn color(mut self, value: Color) -> Self {
+		self.fill_color = Some(value);
+		self.stroke_color = Some(value);
+		self
+	}
+	
+	/// Set both `fill_opacity` and `stroke_opacity`.
+	#[must_use]
+	pub fn opacity(mut self, value: f32) -> Self {
+		self.fill_opacity = Some(value);
+		self.stroke_opacity = Some(value);
+		self
+	}
+	
+	/// The fill color.
+	#[must_use]
+	pub fn fill_color(mut self, value: Color) -> Self {
+		self.fill_color = Some(value);
+		self
+	}
+	
+	/// The fill opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn fill_opacity(mut self, value: f32) -> Self {
+		self.fill_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke position. Defaults to [`StrokePosition::Center`]. This property is not supported on Internet Explorer 8 and earlier.
+	#[must_use]
+	pub fn stroke_position(mut self, value: StrokePosition) -> Self {
+		self.stroke_position = Some(value);
+		self
+	}
+	
+	/// The stroke color.
+	#[must_use]
+	pub fn stroke_color(mut self, value: Color) -> Self {
+		self.stroke_color = Some(value);
+		self
+	}
+	
+	/// The stroke opacity between 0.0 and 1.0.
+	#[must_use]
+	pub fn stroke_opacity(mut self, value: f32) -> Self {
+		self.stroke_opacity = Some(value);
+		self
+	}
+	
+	/// The stroke width in pixels.
+	#[must_use]
+	pub fn stroke_weight(mut self, value: usize) -> Self {
+		self.stroke_weight = Some(value);
+		self
+	}
+}
+
+
+impl From<Color> for PolygonStyle {
+	fn from(c: Color) -> Self {
+		PolygonStyle::default().color(c)
+	}
 }
 
 
@@ -385,6 +499,14 @@ impl LatLng {
 impl From<(f64, f64)> for LatLng {
 	fn from((lat, lon): (f64, f64)) -> Self {
 		LatLng { lat, lon }
+	}
+}
+
+
+// TODO: AsRef?
+impl From<&(f64, f64)> for LatLng {
+	fn from((lat, lon): &(f64, f64)) -> Self {
+		LatLng { lat: *lat, lon: *lon }
 	}
 }
 
@@ -489,7 +611,7 @@ impl JavaScript for Marker {
 pub struct Polyline {
 	path: Vec<LatLng>,
 	geodesic: Option<bool>,
-	stroke: StrokeOptions,
+	style: PolylineStyle,
 	common: CommonOptions,
 }
 
@@ -501,7 +623,7 @@ impl Polyline {
 		Polyline {
 			path: points.into_iter().map(Into::into).collect(),
 			geodesic: None,
-			stroke: StrokeOptions::default(),
+			style: PolylineStyle::default(),
 			common: CommonOptions::default(),
 		}
 	}
@@ -513,24 +635,10 @@ impl Polyline {
 		self
 	}
 	
-	/// The stroke color.
+	/// Set a style for this shape.
 	#[must_use]
-	pub fn color(mut self, value: Color) -> Self {
-		self.stroke.stroke_color = Some(value);
-		self
-	}
-	
-	/// The stroke opacity between 0.0 and 1.0.
-	#[must_use]
-	pub fn opacity(mut self, value: f32) -> Self {
-		self.stroke.stroke_opacity = Some(value);
-		self
-	}
-	
-	/// The stroke width in pixels.
-	#[must_use]
-	pub fn weight(mut self, value: usize) -> Self {
-		self.stroke.stroke_weight = Some(value);
+	pub fn style(mut self, value: impl Into<PolylineStyle>) -> Self {
+		self.style = value.into();
 		self
 	}
 	
@@ -571,9 +679,9 @@ impl JavaScript for Polyline {
 			.entry("map", &MAP_IDENT)
 			.entry("path", &self.path)
 			.entry_opt("geodesic", &self.geodesic)
-			.entry_opt("strokeColor", &self.stroke.stroke_color)
-			.entry_opt("strokeOpacity", &self.stroke.stroke_opacity)
-			.entry_opt("strokeWeight", &self.stroke.stroke_weight)
+			.entry_opt("strokeColor", &self.style.stroke_color)
+			.entry_opt("strokeOpacity", &self.style.stroke_opacity)
+			.entry_opt("strokeWeight", &self.style.stroke_weight)
 			.entry_opt("draggable", &self.common.draggable)
 			.entry_opt("editable", &self.common.editable)
 			.entry_opt("visible", &self.common.visible)
@@ -604,8 +712,7 @@ impl JavaScript for Polyline {
 pub struct Polygon {
 	paths: Vec<Vec<LatLng>>,
 	geodesic: Option<bool>,
-	fill: FillOptions,
-	stroke: StrokeOptions,
+	style: PolygonStyle,
 	common: CommonOptions,
 }
 
@@ -617,8 +724,7 @@ impl Polygon {
 		Polygon {
 			paths: vec![points.into_iter().map(Into::into).collect()],
 			geodesic: None,
-			fill: FillOptions::default(),
-			stroke: StrokeOptions::default(),
+			style: PolygonStyle::default(),
 			common: CommonOptions::default(),
 		}
 	}
@@ -637,53 +743,10 @@ impl Polygon {
 		self
 	}
 	
-	/// Set both `fill_color` and `stroke_color`.
+	/// Set a style for this shape.
 	#[must_use]
-	pub fn color(mut self, value: Color) -> Self {
-		self.fill.fill_color = Some(value);
-		self.stroke.stroke_color = Some(value);
-		self
-	}
-	
-	/// The fill color.
-	#[must_use]
-	pub fn fill_color(mut self, value: Color) -> Self {
-		self.fill.fill_color = Some(value);
-		self
-	}
-	
-	/// The fill opacity between 0.0 and 1.0.
-	#[must_use]
-	pub fn fill_opacity(mut self, value: f32) -> Self {
-		self.fill.fill_opacity = Some(value);
-		self
-	}
-	
-	/// The stroke position. Defaults to [`StrokePosition::Center`]. This property is not supported on Internet Explorer 8 and earlier.
-	#[must_use]
-	pub fn stroke_position(mut self, value: StrokePosition) -> Self {
-		self.fill.stroke_position = Some(value);
-		self
-	}
-	
-	/// The stroke color.
-	#[must_use]
-	pub fn stroke_color(mut self, value: Color) -> Self {
-		self.stroke.stroke_color = Some(value);
-		self
-	}
-	
-	/// The stroke opacity between 0.0 and 1.0.
-	#[must_use]
-	pub fn stroke_opacity(mut self, value: f32) -> Self {
-		self.stroke.stroke_opacity = Some(value);
-		self
-	}
-	
-	/// The stroke width in pixels.
-	#[must_use]
-	pub fn stroke_weight(mut self, value: usize) -> Self {
-		self.stroke.stroke_weight = Some(value);
+	pub fn style(mut self, value: impl Into<PolygonStyle>) -> Self {
+		self.style = value.into();
 		self
 	}
 	
@@ -724,12 +787,12 @@ impl JavaScript for Polygon {
 			.entry("map", &MAP_IDENT)
 			.entry("paths", &self.paths)
 			.entry_opt("geodesic", &self.geodesic)
-			.entry_opt("fillColor", &self.fill.fill_color)
-			.entry_opt("fillOpacity", &self.fill.fill_opacity)
-			.entry_opt("strokePosition", &self.fill.stroke_position)
-			.entry_opt("strokeColor", &self.stroke.stroke_color)
-			.entry_opt("strokeOpacity", &self.stroke.stroke_opacity)
-			.entry_opt("strokeWeight", &self.stroke.stroke_weight)
+			.entry_opt("fillColor", &self.style.fill_color)
+			.entry_opt("fillOpacity", &self.style.fill_opacity)
+			.entry_opt("strokePosition", &self.style.stroke_position)
+			.entry_opt("strokeColor", &self.style.stroke_color)
+			.entry_opt("strokeOpacity", &self.style.stroke_opacity)
+			.entry_opt("strokeWeight", &self.style.stroke_weight)
 			.entry_opt("draggable", &self.common.draggable)
 			.entry_opt("editable", &self.common.editable)
 			.entry_opt("visible", &self.common.visible)
@@ -756,8 +819,7 @@ impl JavaScript for Polygon {
 #[derive(Debug, Copy, Clone)]
 pub struct Rectangle {
 	bounds: LatLngBounds,
-	fill: FillOptions,
-	stroke: StrokeOptions,
+	style: PolygonStyle,
 	common: CommonOptions,
 }
 
@@ -768,59 +830,15 @@ impl Rectangle {
 	pub fn new(p1: impl Into<LatLng>, p2: impl Into<LatLng>) -> Self {
 		Rectangle {
 			bounds: LatLngBounds::new(p1.into(), p2.into()),
-			fill: FillOptions::default(),
-			stroke: StrokeOptions::default(),
+			style: PolygonStyle::default(),
 			common: CommonOptions::default(),
 		}
 	}
 	
-	/// Set both `fill_color` and `stroke_color`.
+	/// Set a style for this shape.
 	#[must_use]
-	pub fn color(mut self, value: Color) -> Self {
-		self.fill.fill_color = Some(value);
-		self.stroke.stroke_color = Some(value);
-		self
-	}
-	
-	/// The fill color.
-	#[must_use]
-	pub fn fill_color(mut self, value: Color) -> Self {
-		self.fill.fill_color = Some(value);
-		self
-	}
-	
-	/// The fill opacity between 0.0 and 1.0.
-	#[must_use]
-	pub fn fill_opacity(mut self, value: f32) -> Self {
-		self.fill.fill_opacity = Some(value);
-		self
-	}
-	
-	/// The stroke position. Defaults to [`StrokePosition::Center`]. This property is not supported on Internet Explorer 8 and earlier.
-	#[must_use]
-	pub fn stroke_position(mut self, value: StrokePosition) -> Self {
-		self.fill.stroke_position = Some(value);
-		self
-	}
-	
-	/// The stroke color.
-	#[must_use]
-	pub fn stroke_color(mut self, value: Color) -> Self {
-		self.stroke.stroke_color = Some(value);
-		self
-	}
-	
-	/// The stroke opacity between 0.0 and 1.0.
-	#[must_use]
-	pub fn stroke_opacity(mut self, value: f32) -> Self {
-		self.stroke.stroke_opacity = Some(value);
-		self
-	}
-	
-	/// The stroke width in pixels.
-	#[must_use]
-	pub fn stroke_weight(mut self, value: usize) -> Self {
-		self.stroke.stroke_weight = Some(value);
+	pub fn style(mut self, value: impl Into<PolygonStyle>) -> Self {
+		self.style = value.into();
 		self
 	}
 	
@@ -860,12 +878,12 @@ impl JavaScript for Rectangle {
 		f.write_object()
 			.entry("map", &MAP_IDENT)
 			.entry("bounds", &self.bounds)
-			.entry_opt("fillColor", &self.fill.fill_color)
-			.entry_opt("fillOpacity", &self.fill.fill_opacity)
-			.entry_opt("strokePosition", &self.fill.stroke_position)
-			.entry_opt("strokeColor", &self.stroke.stroke_color)
-			.entry_opt("strokeOpacity", &self.stroke.stroke_opacity)
-			.entry_opt("strokeWeight", &self.stroke.stroke_weight)
+			.entry_opt("fillColor", &self.style.fill_color)
+			.entry_opt("fillOpacity", &self.style.fill_opacity)
+			.entry_opt("strokePosition", &self.style.stroke_position)
+			.entry_opt("strokeColor", &self.style.stroke_color)
+			.entry_opt("strokeOpacity", &self.style.stroke_opacity)
+			.entry_opt("strokeWeight", &self.style.stroke_weight)
 			.entry_opt("draggable", &self.common.draggable)
 			.entry_opt("editable", &self.common.editable)
 			.entry_opt("visible", &self.common.visible)
@@ -893,8 +911,7 @@ impl JavaScript for Rectangle {
 pub struct Circle {
 	center: LatLng,
 	radius: f64,
-	fill: FillOptions,
-	stroke: StrokeOptions,
+	style: PolygonStyle,
 	common: CommonOptions,
 }
 
@@ -908,59 +925,15 @@ impl Circle {
 		Circle {
 			center: center.into(),
 			radius,
-			fill: FillOptions::default(),
-			stroke: StrokeOptions::default(),
+			style: PolygonStyle::default(),
 			common: CommonOptions::default(),
 		}
 	}
 	
-	/// Set both `fill_color` and `stroke_color`.
+	/// Set a style for this shape.
 	#[must_use]
-	pub fn color(mut self, value: Color) -> Self {
-		self.fill.fill_color = Some(value);
-		self.stroke.stroke_color = Some(value);
-		self
-	}
-	
-	/// The fill color.
-	#[must_use]
-	pub fn fill_color(mut self, value: Color) -> Self {
-		self.fill.fill_color = Some(value);
-		self
-	}
-	
-	/// The fill opacity between 0.0 and 1.0.
-	#[must_use]
-	pub fn fill_opacity(mut self, value: f32) -> Self {
-		self.fill.fill_opacity = Some(value);
-		self
-	}
-	
-	/// The stroke position. Defaults to [`StrokePosition::Center`]. This property is not supported on Internet Explorer 8 and earlier.
-	#[must_use]
-	pub fn stroke_position(mut self, value: StrokePosition) -> Self {
-		self.fill.stroke_position = Some(value);
-		self
-	}
-	
-	/// The stroke color.
-	#[must_use]
-	pub fn stroke_color(mut self, value: Color) -> Self {
-		self.stroke.stroke_color = Some(value);
-		self
-	}
-	
-	/// The stroke opacity between 0.0 and 1.0.
-	#[must_use]
-	pub fn stroke_opacity(mut self, value: f32) -> Self {
-		self.stroke.stroke_opacity = Some(value);
-		self
-	}
-	
-	/// The stroke width in pixels.
-	#[must_use]
-	pub fn stroke_weight(mut self, value: usize) -> Self {
-		self.stroke.stroke_weight = Some(value);
+	pub fn style(mut self, value: impl Into<PolygonStyle>) -> Self {
+		self.style = value.into();
 		self
 	}
 	
@@ -1001,12 +974,12 @@ impl JavaScript for Circle {
 			.entry("map", &MAP_IDENT)
 			.entry("center", &self.center)
 			.entry("radius", &self.radius)
-			.entry_opt("fillColor", &self.fill.fill_color)
-			.entry_opt("fillOpacity", &self.fill.fill_opacity)
-			.entry_opt("strokePosition", &self.fill.stroke_position)
-			.entry_opt("strokeColor", &self.stroke.stroke_color)
-			.entry_opt("strokeOpacity", &self.stroke.stroke_opacity)
-			.entry_opt("strokeWeight", &self.stroke.stroke_weight)
+			.entry_opt("fillColor", &self.style.fill_color)
+			.entry_opt("fillOpacity", &self.style.fill_opacity)
+			.entry_opt("strokePosition", &self.style.stroke_position)
+			.entry_opt("strokeColor", &self.style.stroke_color)
+			.entry_opt("strokeOpacity", &self.style.stroke_opacity)
+			.entry_opt("strokeWeight", &self.style.stroke_weight)
 			.entry_opt("draggable", &self.common.draggable)
 			.entry_opt("editable", &self.common.editable)
 			.entry_opt("visible", &self.common.visible)
