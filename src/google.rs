@@ -55,7 +55,7 @@ impl<'a, 'f> JavaScriptObject<'a, 'f> {
 }
 
 
-trait JavaScript {
+pub trait JavaScript {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result;
 }
 
@@ -136,7 +136,6 @@ impl<'a> Display for RawIdent<'a> {
 }
 
 
-#[derive(Debug, Clone)]
 pub struct GoogleMap {
 	apikey: String,
 	page_title: Option<String>,
@@ -145,11 +144,7 @@ pub struct GoogleMap {
 	map_type: Option<MapType>,
 	disable_default_gui: Option<bool>,
 	disable_double_click_zoom: Option<bool>,
-	markers: Vec<Marker>,
-	polylines: Vec<Polyline>,
-	polygons: Vec<Polygon>,
-	rectangles: Vec<Rectangle>,
-	circles: Vec<Circle>,
+	shapes: Vec<Box<dyn JavaScript>>,
 }
 
 
@@ -164,11 +159,7 @@ impl GoogleMap {
 			map_type: None,
 			disable_default_gui: None,
 			disable_double_click_zoom: None,
-			markers: Vec::default(),
-			polylines: Vec::default(),
-			polygons: Vec::default(),
-			rectangles: Vec::default(),
-			circles: Vec::default(),
+			shapes: Vec::default(),
 		}
 	}
 	
@@ -196,63 +187,17 @@ impl GoogleMap {
 		self
 	}
 	
-	/// Add a marker to the map.
-	pub fn marker(&mut self, marker: Marker) -> &mut Self {
-		self.markers.push(marker);
+	/// Draw a shape on the map.
+	pub fn draw(&mut self, shape: impl JavaScript + 'static) -> &mut Self {
+		self.shapes.push(Box::new(shape));
 		self
 	}
 	
-	/// Add multiple markers at once.
-	pub fn markers(&mut self, markers: impl IntoIterator<Item=Marker>) -> &mut Self {
-		self.markers.extend(markers.into_iter());
-		self
-	}
-	
-	/// Add a polygon to the map.
-	pub fn polyline(&mut self, polyline: Polyline) -> &mut Self {
-		self.polylines.push(polyline);
-		self
-	}
-	
-	/// Add multiple polygons at once.
-	pub fn polylines(&mut self, polylines: impl IntoIterator<Item=Polyline>) -> &mut Self {
-		self.polylines.extend(polylines.into_iter());
-		self
-	}
-	
-	/// Add a polygon to the map.
-	pub fn polygon(&mut self, polygon: Polygon) -> &mut Self {
-		self.polygons.push(polygon);
-		self
-	}
-	
-	/// Add multiple polygons at once.
-	pub fn polygons(&mut self, polygons: impl IntoIterator<Item=Polygon>) -> &mut Self {
-		self.polygons.extend(polygons.into_iter());
-		self
-	}
-	
-	/// Add a rectangle to the map.
-	pub fn rectangle(&mut self, rectangle: Rectangle) -> &mut Self {
-		self.rectangles.push(rectangle);
-		self
-	}
-	
-	/// Add multiple rectangles at once.
-	pub fn rectangles(&mut self, rectangles: impl IntoIterator<Item=Rectangle>) -> &mut Self {
-		self.rectangles.extend(rectangles.into_iter());
-		self
-	}
-	
-	/// Add a circle to the map.
-	pub fn circle(&mut self, circle: Circle) -> &mut Self {
-		self.circles.push(circle);
-		self
-	}
-	
-	/// Add multiple circles at once.
-	pub fn circles(&mut self, circles: impl IntoIterator<Item=Circle>) -> &mut Self {
-		self.circles.extend(circles.into_iter());
+	/// Draw multiple shapes at once.
+	pub fn draw_all(&mut self, shapes: impl IntoIterator<Item=impl JavaScript + 'static>) -> &mut Self {
+		for shape in shapes {
+			self.shapes.push(Box::new(shape))
+		}
 		self
 	}
 }
@@ -270,41 +215,9 @@ impl JavaScript for GoogleMap {
 			.finish()?;
 		f.write_str(");\n\n")?;
 		
-		for marker in &self.markers {
+		for shape in &self.shapes {
 			f.write_str("\t\t")?;
-			marker.fmt_js(f)?;
-			f.write_str(";\n")?;
-		}
-		
-		f.write_str("\n")?;
-		
-		for polyline in &self.polylines {
-			f.write_str("\t\t")?;
-			polyline.fmt_js(f)?;
-			f.write_str(";\n")?;
-		}
-		
-		f.write_str("\n")?;
-		
-		for polygon in &self.polygons {
-			f.write_str("\t\t")?;
-			polygon.fmt_js(f)?;
-			f.write_str(";\n")?;
-		}
-		
-		f.write_str("\n")?;
-		
-		for rectangle in &self.rectangles {
-			f.write_str("\t\t")?;
-			rectangle.fmt_js(f)?;
-			f.write_str(";\n")?;
-		}
-		
-		f.write_str("\n")?;
-		
-		for circle in &self.circles {
-			f.write_str("\t\t")?;
-			circle.fmt_js(f)?;
+			shape.fmt_js(f)?;
 			f.write_str(";\n")?;
 		}
 		
@@ -567,7 +480,7 @@ impl JavaScript for Marker {
 /// use mapplot::google::{GoogleMap, MapType, Polyline};
 ///
 /// let html = GoogleMap::new((0.0, 0.0), 1, "<your-apikey-here>")
-///     .polyline(Polyline::new([(11.1, 22.2), (33.3, 44.4), (-22.2, 11.1)]))
+///     .draw(Polyline::new([(11.1, 22.2), (33.3, 44.4), (-22.2, 11.1)]))
 ///     .to_string();
 ///
 /// std::fs::write("map.html", html).unwrap();
@@ -682,7 +595,7 @@ impl JavaScript for Polyline {
 /// use mapplot::google::{GoogleMap, MapType, Polygon};
 ///
 /// let html = GoogleMap::new((0.0, 0.0), 1, "<your-apikey-here>")
-///     .polygon(Polygon::new([(11.1, 22.2), (33.3, 44.4), (-22.2, 11.1)]))
+///     .draw(Polygon::new([(11.1, 22.2), (33.3, 44.4), (-22.2, 11.1)]))
 ///     .to_string();
 ///
 /// std::fs::write("map.html", html).unwrap();
@@ -835,7 +748,7 @@ impl JavaScript for Polygon {
 /// use mapplot::google::{GoogleMap, MapType, Rectangle};
 ///
 /// let html = GoogleMap::new((0.0, 0.0), 1, "<your-apikey-here>")
-///     .rectangle(Rectangle::new((11.1, 22.2), (33.3, 44.4)))
+///     .draw(Rectangle::new((11.1, 22.2), (33.3, 44.4)))
 ///     .to_string();
 ///
 /// std::fs::write("map.html", html).unwrap();
@@ -971,7 +884,7 @@ impl JavaScript for Rectangle {
 /// use mapplot::google::{GoogleMap, MapType, Circle};
 ///
 /// let html = GoogleMap::new((0.0, 0.0), 1, "<your-apikey-here>")
-///     .circle(Circle::new((22.2, 33.3), 30_000.0))
+///     .draw(Circle::new((22.2, 33.3), 30_000.0))
 ///     .to_string();
 ///
 /// std::fs::write("map.html", html).unwrap();
