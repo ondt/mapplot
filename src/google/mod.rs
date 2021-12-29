@@ -134,13 +134,6 @@ impl<'a> JavaScript for RawIdent<'a> {
 }
 
 
-impl<'a> Display for RawIdent<'a> {
-	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		Display::fmt(self.0, f)
-	}
-}
-
-
 pub struct GoogleMap {
 	apikey: String,
 	page_title: Option<String>,
@@ -210,7 +203,9 @@ impl GoogleMap {
 
 impl JavaScript for GoogleMap {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		write!(f, r#"		const {} = new google.maps.Map(document.getElementById("map_canvas"), "#, MAP_IDENT)?;
+		f.write_str("\t\tconst ")?;
+		MAP_IDENT.fmt_js(f)?;
+		f.write_str(" = new google.maps.Map(document.getElementById(\"map_canvas\"), ")?;
 		f.write_object()
 			.entry("center", &self.center)
 			.entry("zoom", &self.zoom)
