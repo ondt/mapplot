@@ -27,9 +27,9 @@ pub struct GoogleMap {
 
 impl GoogleMap {
 	// TODO: auto center & zoom
-	pub fn new(center: impl Into<Location>, zoom: u8, apikey: impl AsRef<str>) -> Self {
+	pub fn new<'a>(center: impl Into<Location>, zoom: u8, apikey: impl Into<Option<&'a str>>) -> Self {
 		GoogleMap {
-			apikey: apikey.as_ref().to_string(),
+			apikey: apikey.into().unwrap_or("").to_string(),
 			page_title: None,
 			center: center.into(),
 			zoom,
