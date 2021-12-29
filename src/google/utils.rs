@@ -65,38 +65,22 @@ pub(crate) trait JavaScript {
 }
 
 
-macro_rules! literal_default {
+macro_rules! hijack_literal {
     ($($t:ty)*) => ($(
         impl JavaScript for $t {
             fn fmt_js(&self, fmt: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                Display::fmt(self, fmt)
+                Debug::fmt(self, fmt)
             }
         }
     )*)
 }
 
-literal_default! { bool u8 f32 f64 usize isize }
+hijack_literal! { bool u8 f32 f64 usize isize &str String }
 
 
 impl<R: JavaScript> JavaScript for &R {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		(*self).fmt_js(f)
-	}
-}
-
-
-impl JavaScript for &str {
-	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		// TODO: replace '\n' and stuff
-		write!(f, "\"{}\"", self)
-	}
-}
-
-
-impl JavaScript for String {
-	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		// TODO: replace '\n' and stuff
-		write!(f, "\"{}\"", self)
 	}
 }
 
