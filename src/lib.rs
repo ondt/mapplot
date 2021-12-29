@@ -21,6 +21,7 @@ use std::fmt::{Display, Formatter};
 
 
 pub mod google;
+pub mod image;
 
 
 fn hijack_formatter(f: impl Fn(&mut Formatter<'_>) -> fmt::Result) -> String {
