@@ -61,7 +61,7 @@ impl<'a, 'f> JavaScriptObject<'a, 'f> {
 }
 
 
-pub trait JavaScript {
+pub trait JavaScript: Debug {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result;
 }
 
@@ -168,6 +168,7 @@ impl JavaScript for StrokePosition {
 const MAP_IDENT: RawIdent<'static> = RawIdent("__map");
 
 
+#[derive(Debug, Copy, Clone)]
 struct RawIdent<'a>(&'a str);
 
 
@@ -178,6 +179,7 @@ impl<'a> JavaScript for RawIdent<'a> {
 }
 
 
+#[derive(Debug)]
 pub struct GoogleMap {
 	apikey: String,
 	page_title: Option<String>,
