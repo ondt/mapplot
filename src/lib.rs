@@ -33,3 +33,48 @@ fn hijack_formatter(f: impl Fn(&mut Formatter<'_>) -> fmt::Result) -> String {
 	
 	format!("{}", Wrapper(f))
 }
+
+
+#[derive(Debug, Copy, Clone)]
+pub struct LatLng {
+	lat: f64,
+	lon: f64,
+}
+
+
+impl LatLng {
+	#[must_use]
+	pub fn new(lat: f64, lon: f64) -> Self {
+		LatLng { lat, lon }
+	}
+}
+
+
+impl From<(f64, f64)> for LatLng {
+	fn from((lat, lon): (f64, f64)) -> Self {
+		LatLng { lat, lon }
+	}
+}
+
+
+// TODO: AsRef?
+impl From<&(f64, f64)> for LatLng {
+	fn from((lat, lon): &(f64, f64)) -> Self {
+		LatLng { lat: *lat, lon: *lon }
+	}
+}
+
+
+#[derive(Debug, Copy, Clone)]
+pub struct LatLngBounds {
+	p1: LatLng,
+	p2: LatLng,
+}
+
+
+impl LatLngBounds {
+	#[must_use]
+	pub fn new(p1: LatLng, p2: LatLng) -> Self {
+		LatLngBounds { p1, p2 }
+	}
+}

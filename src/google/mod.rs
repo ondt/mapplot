@@ -1,5 +1,6 @@
 use std::fmt::{self, Debug, Display, Formatter};
 
+use crate::{LatLng, LatLngBounds};
 use crate::google::style::{Color, PolygonStyle, PolylineStyle, StrokePosition};
 
 
@@ -117,6 +118,49 @@ impl<T: JavaScript> JavaScript for Vec<T> {
 		}
 		f.write_str("]")?;
 		Ok(())
+	}
+}
+
+
+impl JavaScript for LatLng {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		write!(f, "new google.maps.LatLng({}, {})", self.lat, self.lon)
+	}
+}
+
+
+impl JavaScript for LatLngBounds {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		f.write_str("new google.maps.LatLngBounds(")?;
+		self.p1.fmt_js(f)?;
+		f.write_str(", ")?;
+		self.p2.fmt_js(f)?;
+		f.write_str(")")?;
+		Ok(())
+	}
+}
+
+
+impl JavaScript for Color {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		match *self {
+			Color::RGB(r, g, b) => write!(f, "\"#{:02x}{:02x}{:02x}\"", r, g, b),
+			Color::RGBA(r, g, b, a) => write!(f, "\"#{:02x}{:02x}{:02x}{:02x}\"", r, g, b, a),
+			Color::HSL(h, s, l) => write!(f, "\"hsl({h}, {s}%, {l}%)\"", h = h, s = 100.0 * f64::from(s) / 255.0, l = 100.0 * f64::from(l) / 255.0),
+			Color::HSLA(h, s, l, a) => write!(f, "\"hsla({}, {}%, {}%, {}%)\"", h = h, s = 100.0 * f64::from(s) / 255.0, l = 100.0 * f64::from(l) / 255.0, a = 100.0 * f64::from(a) / 255.0),
+			named => format!("{:?}", named).to_lowercase().fmt_js(f),
+		}
+	}
+}
+
+
+impl JavaScript for StrokePosition {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		match self {
+			StrokePosition::Center => f.write_str("google.maps.StrokePosition.CENTER"),
+			StrokePosition::Inside => f.write_str("google.maps.StrokePosition.INSIDE"),
+			StrokePosition::Outside => f.write_str("google.maps.StrokePosition.OUTSIDE"),
+		}
 	}
 }
 
@@ -291,101 +335,6 @@ struct CommonOptions {
 }
 
 
-impl JavaScript for Color {
-	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		match *self {
-			Color::RGB(r, g, b) => write!(f, "\"#{:02x}{:02x}{:02x}\"", r, g, b),
-			Color::RGBA(r, g, b, a) => write!(f, "\"#{:02x}{:02x}{:02x}{:02x}\"", r, g, b, a),
-			Color::HSL(h, s, l) => write!(f, "\"hsl({h}, {s}%, {l}%)\"", h = h, s = 100.0 * f64::from(s) / 255.0, l = 100.0 * f64::from(l) / 255.0),
-			Color::HSLA(h, s, l, a) => write!(f, "\"hsla({}, {}%, {}%, {}%)\"", h = h, s = 100.0 * f64::from(s) / 255.0, l = 100.0 * f64::from(l) / 255.0, a = 100.0 * f64::from(a) / 255.0),
-			named => format!("{:?}", named).to_lowercase().fmt_js(f),
-		}
-	}
-}
-
-
-impl JavaScript for StrokePosition {
-	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		match self {
-			StrokePosition::Center => f.write_str("google.maps.StrokePosition.CENTER"),
-			StrokePosition::Inside => f.write_str("google.maps.StrokePosition.INSIDE"),
-			StrokePosition::Outside => f.write_str("google.maps.StrokePosition.OUTSIDE"),
-		}
-	}
-}
-
-
-#[derive(Debug, Copy, Clone)]
-pub struct LatLng {
-	lat: f64,
-	lon: f64,
-}
-
-
-impl LatLng {
-	#[must_use]
-	pub fn new(lat: f64, lon: f64) -> Self {
-		LatLng { lat, lon }
-	}
-}
-
-
-impl From<(f64, f64)> for LatLng {
-	fn from((lat, lon): (f64, f64)) -> Self {
-		LatLng { lat, lon }
-	}
-}
-
-
-// TODO: AsRef?
-impl From<&(f64, f64)> for LatLng {
-	fn from((lat, lon): &(f64, f64)) -> Self {
-		LatLng { lat: *lat, lon: *lon }
-	}
-}
-
-
-impl From<Marker> for LatLng {
-	fn from(m: Marker) -> Self {
-		m.position
-	}
-}
-
-
-impl JavaScript for LatLng {
-	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		write!(f, "new google.maps.LatLng({}, {})", self.lat, self.lon)
-	}
-}
-
-
-#[derive(Debug, Copy, Clone)]
-pub struct LatLngBounds {
-	p1: LatLng,
-	p2: LatLng,
-}
-
-
-impl LatLngBounds {
-	#[must_use]
-	pub fn new(p1: LatLng, p2: LatLng) -> Self {
-		LatLngBounds { p1, p2 }
-	}
-}
-
-
-impl JavaScript for LatLngBounds {
-	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		f.write_str("new google.maps.LatLngBounds(")?;
-		self.p1.fmt_js(f)?;
-		f.write_str(", ")?;
-		self.p2.fmt_js(f)?;
-		f.write_str(")")?;
-		Ok(())
-	}
-}
-
-
 #[derive(Debug, Clone)]
 pub struct Marker {
 	position: LatLng,
@@ -425,6 +374,13 @@ impl JavaScript for Marker {
 			.finish()?;
 		f.write_str(")")?;
 		Ok(())
+	}
+}
+
+
+impl From<Marker> for LatLng {
+	fn from(m: Marker) -> Self {
+		m.position
 	}
 }
 
