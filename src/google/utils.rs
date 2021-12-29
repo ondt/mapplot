@@ -143,7 +143,7 @@ impl JavaScript for BoundingBox {
 
 
 #[derive(Debug, Copy, Clone)]
-pub struct RawIdent<'a>(pub &'a str);
+pub(crate) struct RawIdent<'a>(pub(crate) &'a str);
 
 
 impl<'a> JavaScript for RawIdent<'a> {
