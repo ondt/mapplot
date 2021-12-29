@@ -178,6 +178,18 @@ struct CommonOptions {
 }
 
 
+/// Marker.
+///
+/// # Examples
+/// ```
+/// use mapplot::google::{GoogleMap, MapType, Marker};
+///
+/// let html = GoogleMap::new((0.0, 0.0), 1, "<your-apikey-here>")
+///     .draw(Marker::new((51.507, -0.127)).label("A").title("London"))
+///     .to_string();
+///
+/// std::fs::write("map.html", html).unwrap();
+/// ```
 #[derive(Debug, Clone)]
 pub struct Marker {
 	position: Location,
@@ -189,6 +201,7 @@ pub struct Marker {
 
 
 impl Marker {
+	/// Create a new Marker.
 	#[must_use]
 	pub fn new(pos: impl Into<Location>) -> Self {
 		Marker {
@@ -200,11 +213,13 @@ impl Marker {
 		}
 	}
 	
+	/// Adds a label to the marker. A marker label is a letter or number that appears inside a marker.
 	pub fn label(mut self, value: impl AsRef<str>) -> Self {
 		self.label = Some(value.as_ref().to_string());
 		self
 	}
 	
+	/// Rollover text. If provided, an accessibility text (e.g. for use with screen readers) will be added to the marker with the provided value.
 	pub fn title(mut self, value: impl AsRef<str>) -> Self {
 		self.title = Some(value.as_ref().to_string());
 		self
@@ -274,7 +289,7 @@ impl Polyline {
 		self
 	}
 	
-	/// Set a style for this shape.
+	/// Set style information for this shape.
 	#[must_use]
 	pub fn style(mut self, value: impl Into<PolylineStyle>) -> Self {
 		self.style = value.into();
@@ -382,7 +397,7 @@ impl Polygon {
 		self
 	}
 	
-	/// Set a style for this shape.
+	/// Set style information for this shape.
 	#[must_use]
 	pub fn style(mut self, value: impl Into<PolygonStyle>) -> Self {
 		self.style = value.into();
@@ -474,7 +489,7 @@ impl Rectangle {
 		}
 	}
 	
-	/// Set a style for this shape.
+	/// Set style information for this shape.
 	#[must_use]
 	pub fn style(mut self, value: impl Into<PolygonStyle>) -> Self {
 		self.style = value.into();
@@ -569,7 +584,7 @@ impl Circle {
 		}
 	}
 	
-	/// Set a style for this shape.
+	/// Set style information for this shape.
 	#[must_use]
 	pub fn style(mut self, value: impl Into<PolygonStyle>) -> Self {
 		self.style = value.into();
