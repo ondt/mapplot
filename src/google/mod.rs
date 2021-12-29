@@ -124,7 +124,8 @@ impl<T: JavaScript> JavaScript for Vec<T> {
 
 impl JavaScript for Location {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		write!(f, "new google.maps.LatLng({}, {})", self.lat, self.lon)
+		// https://developers.google.com/maps/documentation/javascript/reference/coordinates#LatLngLiteral
+		write!(f, "{{ lat: {}, lng: {} }}", self.lat, self.lon)
 	}
 }
 
