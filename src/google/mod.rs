@@ -2,8 +2,7 @@ use std::fmt::{self, Debug, Display, Formatter};
 
 use crate::{BoundingBox, Location};
 use crate::google::style::{PolygonStyle, PolylineStyle};
-use crate::google::utils::{FormatterExt, RawIdent};
-pub use crate::google::utils::JavaScript;
+use crate::google::utils::{FormatterExt, JavaScript, RawIdent};
 
 
 pub mod style;
@@ -22,7 +21,7 @@ pub struct GoogleMap {
 	map_type: Option<MapType>,
 	disable_default_gui: Option<bool>,
 	disable_double_click_zoom: Option<bool>,
-	shapes: Vec<Box<dyn JavaScript>>,
+	shapes: Vec<Box<dyn Shape>>,
 }
 
 
@@ -66,13 +65,13 @@ impl GoogleMap {
 	}
 	
 	/// Draw a shape on the map.
-	pub fn draw(&mut self, shape: impl JavaScript + 'static) -> &mut Self {
+	pub fn draw(&mut self, shape: impl Shape + 'static) -> &mut Self {
 		self.shapes.push(Box::new(shape));
 		self
 	}
 	
 	/// Draw multiple shapes at once.
-	pub fn draw_all(&mut self, shapes: impl IntoIterator<Item=impl JavaScript + 'static>) -> &mut Self {
+	pub fn draw_all(&mut self, shapes: impl IntoIterator<Item=impl Shape + 'static>) -> &mut Self {
 		for shape in shapes {
 			self.shapes.push(Box::new(shape))
 		}
@@ -159,6 +158,14 @@ impl JavaScript for MapType {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+pub trait Shape: Debug {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result;
+}
+
+
 #[derive(Default, Debug, Copy, Clone)]
 struct CommonOptions {
 	// // TODO: this would have no effect
@@ -205,7 +212,7 @@ impl Marker {
 }
 
 
-impl JavaScript for Marker {
+impl Shape for Marker {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.write_str("new google.maps.Marker(")?;
 		f.write_object()
@@ -304,7 +311,7 @@ impl Polyline {
 }
 
 
-impl JavaScript for Polyline {
+impl Shape for Polyline {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.write_str("new google.maps.Polyline(")?;
 		f.write_object()
@@ -412,7 +419,7 @@ impl Polygon {
 }
 
 
-impl JavaScript for Polygon {
+impl Shape for Polygon {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.write_str("new google.maps.Polygon(")?;
 		f.write_object()
@@ -504,7 +511,7 @@ impl Rectangle {
 }
 
 
-impl JavaScript for Rectangle {
+impl Shape for Rectangle {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.write_str("new google.maps.Rectangle(")?;
 		f.write_object()
@@ -599,7 +606,7 @@ impl Circle {
 }
 
 
-impl JavaScript for Circle {
+impl Shape for Circle {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		f.write_str("new google.maps.Circle(")?;
 		f.write_object()

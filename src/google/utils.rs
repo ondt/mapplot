@@ -60,9 +60,7 @@ impl<'a, 'f> JavaScriptObject<'a, 'f> {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-// TODO: rename: Shape, Draw, Drawable, ...?
-//       + distinguish between Polygon and Location
-pub trait JavaScript: Debug {
+pub(crate) trait JavaScript {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result;
 }
 
