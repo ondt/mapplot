@@ -65,7 +65,7 @@ impl PolylineStyle {
 	
 	/// The stroke width in pixels.
 	#[must_use]
-	pub fn weight(mut self, value: usize) -> Self {
+	pub fn width(mut self, value: usize) -> Self {
 		self.stroke_weight = Some(value);
 		self
 	}
@@ -150,7 +150,7 @@ impl PolygonStyle {
 	
 	/// The stroke width in pixels.
 	#[must_use]
-	pub fn stroke_weight(mut self, value: usize) -> Self {
+	pub fn stroke_width(mut self, value: usize) -> Self {
 		self.stroke_weight = Some(value);
 		self
 	}
