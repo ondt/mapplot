@@ -1,3 +1,8 @@
+use std::fmt::{self, Debug, Formatter};
+
+use crate::google::JavaScript;
+
+
 #[derive(Debug, Copy, Clone)]
 pub enum Color {
 	RGB(u8, u8, u8),
@@ -23,6 +28,19 @@ pub enum Color {
 }
 
 
+impl JavaScript for Color {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		match *self {
+			Color::RGB(r, g, b) => write!(f, "\"#{:02x}{:02x}{:02x}\"", r, g, b),
+			Color::RGBA(r, g, b, a) => write!(f, "\"#{:02x}{:02x}{:02x}{:02x}\"", r, g, b, a),
+			Color::HSL(h, s, l) => write!(f, "\"hsl({h}, {s}%, {l}%)\"", h = h, s = 100.0 * f64::from(s) / 255.0, l = 100.0 * f64::from(l) / 255.0),
+			Color::HSLA(h, s, l, a) => write!(f, "\"hsla({}, {}%, {}%, {}%)\"", h = h, s = 100.0 * f64::from(s) / 255.0, l = 100.0 * f64::from(l) / 255.0, a = 100.0 * f64::from(a) / 255.0),
+			named => format!("{:?}", named).to_lowercase().fmt_js(f),
+		}
+	}
+}
+
+
 #[derive(Debug, Copy, Clone)]
 pub enum StrokePosition {
 	/// The stroke is centered on the polygon's path, with half the stroke inside the polygon and half the stroke outside the polygon.
@@ -31,6 +49,17 @@ pub enum StrokePosition {
 	Inside,
 	/// The stroke lies outside the polygon.
 	Outside,
+}
+
+
+impl JavaScript for StrokePosition {
+	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+		match self {
+			StrokePosition::Center => f.write_str("google.maps.StrokePosition.CENTER"),
+			StrokePosition::Inside => f.write_str("google.maps.StrokePosition.INSIDE"),
+			StrokePosition::Outside => f.write_str("google.maps.StrokePosition.OUTSIDE"),
+		}
+	}
 }
 
 
