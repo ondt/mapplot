@@ -364,6 +364,11 @@ impl Marker {
 		self.label = Some(value.as_ref().to_string());
 		self
 	}
+	
+	pub fn title(mut self, value: impl AsRef<str>) -> Self {
+		self.title = Some(value.as_ref().to_string());
+		self
+	}
 }
 
 
@@ -374,6 +379,7 @@ impl JavaScript for Marker {
 			.entry("map", &MAP_IDENT)
 			.entry("position", &self.position)
 			.entry_opt("label", &self.label)
+			.entry_opt("title", &self.title)
 			.finish()?;
 		f.write_str(")")?;
 		Ok(())
