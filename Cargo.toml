@@ -14,7 +14,7 @@ keywords = ["plotting", "maps", "geo", "google", "mapbox", "svg"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
+svg = "0.10"
 
 # google
 #serde = { version = "1.0", features = ["derive"] }
@@ -23,3 +23,11 @@ keywords = ["plotting", "maps", "geo", "google", "mapbox", "svg"]
 
 #typed-builder = "0.9"
 #derive_builder = "0.10"
+
+
+resvg = "0.20"
+usvg = "0.20"
+tiny-skia = "0.6"
+
+
+googleprojection = "1.2.0"
