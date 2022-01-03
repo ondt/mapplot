@@ -1,8 +1,8 @@
 # `mapplot` - A map plotter library for Rust
 _mapplot_ is a Rust library that plots all kinds of data on all kinds of maps.
 
-It provides plotters for generating interactive maps (`mapplot::google`, ~~`mapplot::mapbox`~~) and static images
-(~~`mapplot::raster`~~, ~~`mapplot::svg`~~).
+It provides plotters for generating static images (~~`mapplot::image`~~) and interactive HTML maps
+(`mapplot::google`, ~~`mapplot::mapbox`~~).
 
 ### Available Plotters
 - `mapplot::google` - Generates an HTML file that uses the
@@ -10,8 +10,7 @@ It provides plotters for generating interactive maps (`mapplot::google`, ~~`mapp
   data. Inspired by [gmplot](https://github.com/gmplot/gmplot).
 - ~~`mapplot::mapbox` - Generates an HTML file similar to `mapplot::google`, but uses
   [Mapbox GL JS](https://github.com/mapbox/mapbox-gl-js) instead and has more features.~~ **(not implemented yet)**
-- ~~`mapplot::raster` - Generates a static raster image.~~ **(not implemented yet)**
-- ~~`mapplot::svg` - Generates a static SVG image.~~ **(not implemented yet)**
+- ~~`mapplot::image` - Generates a static SVG or raster image.~~ **(not implemented yet)**
 
 <br>
 
