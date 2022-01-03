@@ -73,9 +73,22 @@ pub struct BoundingBox {
 	p2: Location,
 }
 
+fn proj(p: impl Into<Location>, zoom: u8) -> Mercator {
+	let p = p.into();
+	let (x, y) = googleprojection::from_ll_to_subpixel(&(p.lon, p.lat), zoom as usize).unwrap();
+	Mercator { x, y }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Mercator {
+	x: f64,
+	y: f64,
+}
+
 impl BoundingBox {
 	#[must_use]
-	pub fn new(p1: Location, p2: Location) -> Self {
+	pub fn new(p1: impl Into<Location>, p2: impl Into<Location>) -> Self {
+		let (p1, p2) = (p1.into(), p2.into());
 		BoundingBox { p1, p2 }
 	}
 }
