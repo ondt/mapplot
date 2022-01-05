@@ -3,12 +3,17 @@ use std::fmt::{Debug, Display, Formatter};
 use svg::Document;
 
 use crate::{BoundingBox, Location, proj};
+use crate::image::loaders::TilesetLoader;
+
+
+pub mod loaders;
 
 
 #[derive(Debug)]
 pub struct ImageMap {
 	bbox: BoundingBox,
 	zoom: u8,
+	loader: Box<dyn TilesetLoader>,
 	doc: Document,
 	shapes: Vec<Box<dyn Shape>>,
 }
@@ -16,10 +21,11 @@ pub struct ImageMap {
 
 impl ImageMap {
 	#[must_use]
-	pub fn new(bbox: BoundingBox, zoom: u8) -> Self {
+	pub fn new(bbox: BoundingBox, zoom: u8, loader: impl TilesetLoader + 'static) -> Self {
 		ImageMap {
 			bbox,
 			zoom,
+			loader: Box::new(loader),
 			doc: Document::new(),
 			shapes: Vec::default(),
 		}
@@ -51,6 +57,7 @@ impl ImageMap {
 		
 		doc.to_string()
 	}
+	
 	
 	/// # Panics
 	/// TODO
