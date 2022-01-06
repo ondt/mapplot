@@ -15,6 +15,9 @@ keywords = ["plotting", "maps", "geo", "google", "mapbox", "svg"]
 
 [dependencies]
 svg = "0.10"
+futures = "0.3"
+slippy_map_tilenames = "0.2.0"
+itertools = "0.10"
 
 # google
 #serde = { version = "1.0", features = ["derive"] }
@@ -46,3 +49,6 @@ infer = "0.5"
 
 
 
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
