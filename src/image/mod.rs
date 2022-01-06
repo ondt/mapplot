@@ -15,7 +15,7 @@ pub struct ImageMap {
 	zoom: u8,
 	loader: Box<dyn TilesetLoader>,
 	doc: Document,
-	shapes: Vec<Box<dyn Shape>>,
+	shapes: Vec<Box<dyn Shape + Send + Sync>>,
 }
 
 
@@ -32,7 +32,7 @@ impl ImageMap {
 	}
 	
 	/// Draw a shape on the map.
-	pub fn draw(&mut self, shape: impl Shape + 'static) -> &mut Self {
+	pub fn draw(&mut self, shape: impl Shape + Send + Sync + 'static) -> &mut Self {
 		self.shapes.push(Box::new(shape));
 		self
 	}
