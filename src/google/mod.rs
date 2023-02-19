@@ -1,16 +1,13 @@
 use std::fmt::{self, Debug, Display, Formatter};
 
-use crate::{BoundingBox, Location};
 use crate::google::style::{PolygonStyle, PolylineStyle};
 use crate::google::utils::{FormatterExt, JavaScript, RawIdent};
-
+use crate::{BoundingBox, Location};
 
 pub mod style;
 mod utils;
 
-
 const MAP_IDENT: RawIdent<'static> = RawIdent("__map");
-
 
 #[derive(Debug)]
 pub struct GoogleMap {
@@ -24,10 +21,13 @@ pub struct GoogleMap {
 	shapes: Vec<Box<dyn Shape>>,
 }
 
-
 impl GoogleMap {
 	// TODO: auto center & zoom
-	pub fn new<'a>(center: impl Into<Location>, zoom: u8, apikey: impl Into<Option<&'a str>>) -> Self {
+	pub fn new<'a>(
+		center: impl Into<Location>,
+		zoom: u8,
+		apikey: impl Into<Option<&'a str>>,
+	) -> Self {
 		GoogleMap {
 			apikey: apikey.into().unwrap_or("").to_string(),
 			page_title: None,
@@ -39,46 +39,48 @@ impl GoogleMap {
 			shapes: Vec::default(),
 		}
 	}
-	
+
 	/// Set the title of the HTML page.
 	pub fn page_title(&mut self, value: impl AsRef<str>) -> &mut Self {
 		self.page_title = Some(value.as_ref().to_string());
 		self
 	}
-	
+
 	/// The initial map type. Defaults to [`MapType::Roadmap`].
 	pub fn map_type(&mut self, value: MapType) -> &mut Self {
 		self.map_type = Some(value);
 		self
 	}
-	
+
 	/// Enable/disable all default UI buttons.
 	pub fn disable_default_gui(&mut self, value: bool) -> &mut Self {
 		self.disable_default_gui = Some(value);
 		self
 	}
-	
+
 	/// Enable/disable zoom and center on double click. Enabled by default.
 	pub fn disable_double_click_zoom(&mut self, value: bool) -> &mut Self {
 		self.disable_double_click_zoom = Some(value);
 		self
 	}
-	
+
 	/// Draw a shape on the map.
 	pub fn draw(&mut self, shape: impl Shape + 'static) -> &mut Self {
 		self.shapes.push(Box::new(shape));
 		self
 	}
-	
+
 	/// Draw multiple shapes at once.
-	pub fn draw_all(&mut self, shapes: impl IntoIterator<Item=impl Shape + 'static>) -> &mut Self {
+	pub fn draw_all(
+		&mut self,
+		shapes: impl IntoIterator<Item = impl Shape + 'static>,
+	) -> &mut Self {
 		for shape in shapes {
 			self.shapes.push(Box::new(shape))
 		}
 		self
 	}
 }
-
 
 impl JavaScript for GoogleMap {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -93,21 +95,22 @@ impl JavaScript for GoogleMap {
 			.entry_opt("disableDoubleClickZoom", &self.disable_double_click_zoom)
 			.finish()?;
 		f.write_str(");\n\n")?;
-		
+
 		for shape in &self.shapes {
 			f.write_str("\t\t")?;
 			shape.fmt_js(f)?;
 			f.write_str(";\n")?;
 		}
-		
+
 		Ok(())
 	}
 }
 
-
 impl Display for GoogleMap {
 	fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-		write!(f, r#"
+		write!(
+			f,
+			r#"
 <html>
 <head>
 <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
@@ -116,11 +119,20 @@ impl Display for GoogleMap {
 <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=visualization&sensor=true_or_false&key={apikey}"></script>
 <script type="text/javascript">
 	function initialize() {{
-"#, title = if let Some(t) = &self.page_title { t.as_str() } else { "Google Maps - mapplot" }, apikey = self.apikey)?;
-		
+"#,
+			title = if let Some(t) = &self.page_title {
+				t.as_str()
+			} else {
+				"Google Maps - mapplot"
+			},
+			apikey = self.apikey
+		)?;
+
 		self.fmt_js(f)?;
-		
-		write!(f, r#"
+
+		write!(
+			f,
+			r#"
 	}}
 </script>
 </head>
@@ -128,10 +140,10 @@ impl Display for GoogleMap {
 	<div id="map_canvas" style="width: 100%; height: 100%;"></div>
 </body>
 </html>
-"#)
+"#
+		)
 	}
 }
-
 
 #[derive(Debug, Copy, Clone)]
 pub enum MapType {
@@ -145,7 +157,6 @@ pub enum MapType {
 	Terrain,
 }
 
-
 impl JavaScript for MapType {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
 		match self {
@@ -157,14 +168,11 @@ impl JavaScript for MapType {
 	}
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 pub trait Shape: Debug {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result;
 }
-
 
 #[derive(Default, Debug, Copy, Clone)]
 struct CommonOptions {
@@ -176,7 +184,6 @@ struct CommonOptions {
 	visible: Option<bool>,
 	z_index: Option<isize>,
 }
-
 
 /// Marker.
 ///
@@ -199,7 +206,6 @@ pub struct Marker {
 	z_index: Option<isize>,
 }
 
-
 impl Marker {
 	/// Create a new Marker.
 	#[must_use]
@@ -212,20 +218,19 @@ impl Marker {
 			z_index: None,
 		}
 	}
-	
+
 	/// Adds a label to the marker. A marker label is a letter or number that appears inside a marker.
 	pub fn label(mut self, value: impl AsRef<str>) -> Self {
 		self.label = Some(value.as_ref().to_string());
 		self
 	}
-	
+
 	/// Rollover text. If provided, an accessibility text (e.g. for use with screen readers) will be added to the marker with the provided value.
 	pub fn title(mut self, value: impl AsRef<str>) -> Self {
 		self.title = Some(value.as_ref().to_string());
 		self
 	}
 }
-
 
 impl Shape for Marker {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -241,13 +246,11 @@ impl Shape for Marker {
 	}
 }
 
-
 impl From<Marker> for Location {
 	fn from(m: Marker) -> Self {
 		m.position
 	}
 }
-
 
 /// A polyline is a linear overlay of connected line segments on the map.
 ///
@@ -269,11 +272,10 @@ pub struct Polyline {
 	common: CommonOptions,
 }
 
-
 impl Polyline {
 	/// Create a new Polyline.
 	#[must_use]
-	pub fn new(points: impl IntoIterator<Item=impl Into<Location>>) -> Self {
+	pub fn new(points: impl IntoIterator<Item = impl Into<Location>>) -> Self {
 		Polyline {
 			path: points.into_iter().map(Into::into).collect(),
 			geodesic: None,
@@ -281,42 +283,42 @@ impl Polyline {
 			common: CommonOptions::default(),
 		}
 	}
-	
+
 	/// When `true`, edges of the polygon are interpreted as geodesic and will follow the curvature of the Earth. When `false`, edges of the polygon are rendered as straight lines in screen space. Note that the shape of a geodesic polygon may appear to change when dragged, as the dimensions are maintained relative to the surface of the earth. Defaults to `false`.
 	#[must_use]
 	pub fn geodesic(mut self, value: bool) -> Self {
 		self.geodesic = Some(value);
 		self
 	}
-	
+
 	/// Set style information for this shape.
 	#[must_use]
 	pub fn style(mut self, value: impl Into<PolylineStyle>) -> Self {
 		self.style = value.into();
 		self
 	}
-	
+
 	/// If set to `true`, the user can drag this shape over the map. The `geodesic` property defines the mode of dragging. Defaults to `false`.
 	#[must_use]
 	pub fn draggable(mut self, value: bool) -> Self {
 		self.common.draggable = Some(value);
 		self
 	}
-	
+
 	/// If set to `true`, the user can edit this shape by dragging the control points shown at the vertices and on each segment. Defaults to `false`.
 	#[must_use]
 	pub fn editable(mut self, value: bool) -> Self {
 		self.common.editable = Some(value);
 		self
 	}
-	
+
 	/// Whether this polyline is visible on the map. Defaults to `true`.
 	#[must_use]
 	pub fn visible(mut self, value: bool) -> Self {
 		self.common.visible = Some(value);
 		self
 	}
-	
+
 	/// The z-index compared to other polygons.
 	#[must_use]
 	pub fn z_index(mut self, value: isize) -> Self {
@@ -324,7 +326,6 @@ impl Polyline {
 		self
 	}
 }
-
 
 impl Shape for Polyline {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -345,7 +346,6 @@ impl Shape for Polyline {
 		Ok(())
 	}
 }
-
 
 /// A geodesic or non-geodesic polygon.
 ///
@@ -370,11 +370,10 @@ pub struct Polygon {
 	common: CommonOptions,
 }
 
-
 impl Polygon {
 	/// Create a new Polygon.
 	#[must_use]
-	pub fn new(points: impl IntoIterator<Item=impl Into<Location>>) -> Self {
+	pub fn new(points: impl IntoIterator<Item = impl Into<Location>>) -> Self {
 		Polygon {
 			paths: vec![points.into_iter().map(Into::into).collect()],
 			geodesic: None,
@@ -382,49 +381,50 @@ impl Polygon {
 			common: CommonOptions::default(),
 		}
 	}
-	
+
 	/// Add a new path to the polygon. Points forming an inner path need to wind in the opposite direction to those in an outer path to form a hole.
 	#[must_use]
-	pub fn path(mut self, points: impl IntoIterator<Item=impl Into<Location>>) -> Self {
-		self.paths.push(points.into_iter().map(Into::into).collect());
+	pub fn path(mut self, points: impl IntoIterator<Item = impl Into<Location>>) -> Self {
+		self.paths
+			.push(points.into_iter().map(Into::into).collect());
 		self
 	}
-	
+
 	/// When `true`, edges of the polygon are interpreted as geodesic and will follow the curvature of the Earth. When `false`, edges of the polygon are rendered as straight lines in screen space. Note that the shape of a geodesic polygon may appear to change when dragged, as the dimensions are maintained relative to the surface of the earth. Defaults to `false`.
 	#[must_use]
 	pub fn geodesic(mut self, value: bool) -> Self {
 		self.geodesic = Some(value);
 		self
 	}
-	
+
 	/// Set style information for this shape.
 	#[must_use]
 	pub fn style(mut self, value: impl Into<PolygonStyle>) -> Self {
 		self.style = value.into();
 		self
 	}
-	
+
 	/// If set to `true`, the user can drag this shape over the map. The `geodesic` property defines the mode of dragging. Defaults to `false`.
 	#[must_use]
 	pub fn draggable(mut self, value: bool) -> Self {
 		self.common.draggable = Some(value);
 		self
 	}
-	
+
 	/// If set to `true`, the user can edit this shape by dragging the control points shown at the vertices and on each segment. Defaults to `false`.
 	#[must_use]
 	pub fn editable(mut self, value: bool) -> Self {
 		self.common.editable = Some(value);
 		self
 	}
-	
+
 	/// Whether this polygon is visible on the map. Defaults to `true`.
 	#[must_use]
 	pub fn visible(mut self, value: bool) -> Self {
 		self.common.visible = Some(value);
 		self
 	}
-	
+
 	/// The z-index compared to other polygons.
 	#[must_use]
 	pub fn z_index(mut self, value: isize) -> Self {
@@ -432,7 +432,6 @@ impl Polygon {
 		self
 	}
 }
-
 
 impl Shape for Polygon {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -457,7 +456,6 @@ impl Shape for Polygon {
 	}
 }
 
-
 /// A rectangle overlay.
 ///
 /// # Examples
@@ -477,7 +475,6 @@ pub struct Rectangle {
 	common: CommonOptions,
 }
 
-
 impl Rectangle {
 	/// Create a new Rectangle by specifying any two locations.
 	#[must_use]
@@ -488,35 +485,35 @@ impl Rectangle {
 			common: CommonOptions::default(),
 		}
 	}
-	
+
 	/// Set style information for this shape.
 	#[must_use]
 	pub fn style(mut self, value: impl Into<PolygonStyle>) -> Self {
 		self.style = value.into();
 		self
 	}
-	
+
 	/// If set to `true`, the user can drag this rectangle over the map. Defaults to `false`.
 	#[must_use]
 	pub fn draggable(mut self, value: bool) -> Self {
 		self.common.draggable = Some(value);
 		self
 	}
-	
+
 	/// If set to `true`, the user can edit this rectangle by dragging the control points shown at the corners and on each edge. Defaults to `false`.
 	#[must_use]
 	pub fn editable(mut self, value: bool) -> Self {
 		self.common.editable = Some(value);
 		self
 	}
-	
+
 	/// Whether this rectangle is visible on the map. Defaults to `true`.
 	#[must_use]
 	pub fn visible(mut self, value: bool) -> Self {
 		self.common.visible = Some(value);
 		self
 	}
-	
+
 	/// The z-index compared to other polygons.
 	#[must_use]
 	pub fn z_index(mut self, value: isize) -> Self {
@@ -524,7 +521,6 @@ impl Rectangle {
 		self
 	}
 }
-
 
 impl Shape for Rectangle {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -548,7 +544,6 @@ impl Shape for Rectangle {
 	}
 }
 
-
 /// A circle on the Earth's surface; also known as a "spherical cap".
 ///
 /// # Examples
@@ -569,7 +564,6 @@ pub struct Circle {
 	common: CommonOptions,
 }
 
-
 impl Circle {
 	/// Create a new circle.
 	///
@@ -583,35 +577,35 @@ impl Circle {
 			common: CommonOptions::default(),
 		}
 	}
-	
+
 	/// Set style information for this shape.
 	#[must_use]
 	pub fn style(mut self, value: impl Into<PolygonStyle>) -> Self {
 		self.style = value.into();
 		self
 	}
-	
+
 	/// If set to `true`, the user can drag this circle over the map. Defaults to `false`.
 	#[must_use]
 	pub fn draggable(mut self, value: bool) -> Self {
 		self.common.draggable = Some(value);
 		self
 	}
-	
+
 	/// If set to `true`, the user can edit this circle by dragging the control points shown at the center and around the circumference of the circle. Defaults to `false`.
 	#[must_use]
 	pub fn editable(mut self, value: bool) -> Self {
 		self.common.editable = Some(value);
 		self
 	}
-	
+
 	/// Whether this circle is visible on the map. Defaults to `true`.
 	#[must_use]
 	pub fn visible(mut self, value: bool) -> Self {
 		self.common.visible = Some(value);
 		self
 	}
-	
+
 	/// The z-index compared to other polygons.
 	#[must_use]
 	pub fn z_index(mut self, value: isize) -> Self {
@@ -619,7 +613,6 @@ impl Circle {
 		self
 	}
 }
-
 
 impl Shape for Circle {
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -643,4 +636,3 @@ impl Shape for Circle {
 		Ok(())
 	}
 }
-
