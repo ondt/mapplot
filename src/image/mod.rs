@@ -8,7 +8,6 @@ use svg::node::element::Element;
 use crate::{BoundingBox, Location, proj};
 use crate::image::loaders::{TilesetLoader, TilesetLoaderError};
 
-
 pub mod loaders;
 
 
@@ -64,12 +63,14 @@ impl ImageMap {
 		let p1 = proj(self.bbox.p1, self.zoom);
 		let p2 = proj(self.bbox.p2, self.zoom);
 		
-		let min_x = f64::min(p1.x, p2.x);
-		let min_y = f64::min(p1.y, p2.y);
-		let width = p2.x - p1.x;
-		let height = p2.y - p1.y;
+		let min_x = f64::min(p1.x, p2.x).floor();
+		let min_y = f64::min(p1.y, p2.y).floor();
+		let width = (p2.x - p1.x).floor();
+		let height = (p2.y - p1.y).floor();
 		
 		let mut doc = Document::new()
+			.set("width", width)
+			.set("height", height)
 			.set("viewBox", (min_x, min_y, width, height));
 		
 		for tile in &self.tiles {
