@@ -27,26 +27,26 @@ pub enum Color {
 }
 
 impl JavaScript for Color {
-	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result {
+	fn fmt_js(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
 		match *self {
-			Color::RGB(r, g, b) => write!(f, "\"#{:02x}{:02x}{:02x}\"", r, g, b),
-			Color::RGBA(r, g, b, a) => write!(f, "\"#{:02x}{:02x}{:02x}{:02x}\"", r, g, b, a),
+			Color::RGB(r, g, b) => write!(formatter, "\"#{r:02x}{g:02x}{b:02x}\""),
+			Color::RGBA(r, g, b, a) => write!(formatter, "\"#{r:02x}{g:02x}{b:02x}{a:02x}\""),
 			Color::HSL(h, s, l) => write!(
-				f,
+				formatter,
 				"\"hsl({h}, {s}%, {l}%)\"",
 				h = h,
 				s = 100.0 * f64::from(s) / 255.0,
 				l = 100.0 * f64::from(l) / 255.0
 			),
 			Color::HSLA(h, s, l, a) => write!(
-				f,
-				"\"hsla({}, {}%, {}%, {}%)\"",
+				formatter,
+				"\"hsla({h}, {s}%, {l}%, {a}%)\"",
 				h = h,
 				s = 100.0 * f64::from(s) / 255.0,
 				l = 100.0 * f64::from(l) / 255.0,
 				a = 100.0 * f64::from(a) / 255.0
 			),
-			named => format!("{:?}", named).to_lowercase().fmt_js(f),
+			named => format!("{named:?}").to_lowercase().fmt_js(formatter),
 		}
 	}
 }

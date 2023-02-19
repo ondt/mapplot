@@ -171,6 +171,7 @@ impl JavaScript for MapType {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub trait Shape: Debug {
+	#[allow(clippy::missing_errors_doc)]
 	fn fmt_js(&self, f: &mut Formatter<'_>) -> fmt::Result;
 }
 
@@ -220,12 +221,14 @@ impl Marker {
 	}
 
 	/// Adds a label to the marker. A marker label is a letter or number that appears inside a marker.
+	#[must_use]
 	pub fn label(mut self, value: impl AsRef<str>) -> Self {
 		self.label = Some(value.as_ref().to_string());
 		self
 	}
 
 	/// Rollover text. If provided, an accessibility text (e.g. for use with screen readers) will be added to the marker with the provided value.
+	#[must_use]
 	pub fn title(mut self, value: impl AsRef<str>) -> Self {
 		self.title = Some(value.as_ref().to_string());
 		self
